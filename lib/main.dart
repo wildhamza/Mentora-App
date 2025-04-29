@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mentora/app_router.dart';
 import 'package:mentora/core/themes/app_theme.dart';
-import 'package:mentora/di/injection.dart';
+import 'package:mentora/core/di/injection.dart';
 import 'package:mentora/presentation/auth/bloc/auth_bloc.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -14,26 +14,26 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase
   await Firebase.initializeApp();
-  
+
   // Initialize Firebase Messaging
   FirebaseMessaging messaging = FirebaseMessaging.instance;
-  
+
   // Request permission for iOS
   NotificationSettings settings = await messaging.requestPermission(
     alert: true,
     badge: true,
     sound: true,
   );
-  
+
   // Set up background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
+
   // Initialize dependency injection
   configureDependencies();
-  
+
   runApp(const MyApp());
 }
 
@@ -50,7 +50,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    
+
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('Got a message whilst in the foreground!');
@@ -61,7 +61,7 @@ class _MyAppState extends State<MyApp> {
         // Show local notification
       }
     });
-    
+
     // Handle notification taps
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('A new onMessageOpenedApp event was published!');
@@ -73,9 +73,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthBloc>(
-          create: (context) => getIt<AuthBloc>(),
-        ),
+        BlocProvider<AuthBloc>(create: (context) => getIt<AuthBloc>()),
         // Add other global BLoCs here
       ],
       child: MaterialApp.router(

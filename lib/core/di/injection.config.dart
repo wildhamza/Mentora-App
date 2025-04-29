@@ -19,7 +19,8 @@ import '../../domain/usecases/course/get_courses_usecase.dart';
 import '../../presentation/auth/bloc/auth_bloc.dart';
 import '../../presentation/student/bloc/student_dashboard_bloc.dart';
 import '../../presentation/teacher/bloc/teacher_dashboard_bloc.dart';
-import '../../presentation/admin/bloc/admin_dashboard_bloc.dart';
+// TODO: Uncomment once admin dashboard bloc is implemented
+// import '../../presentation/admin/bloc/admin_dashboard_bloc.dart';
 
 // This function will be replaced by the generated one
 @InjectableInit(
@@ -27,7 +28,11 @@ import '../../presentation/admin/bloc/admin_dashboard_bloc.dart';
   preferRelativeImports: true,
   asExtension: false,
 )
-GetIt $initGetIt(GetIt getIt, {String? environment, EnvironmentFilter? environmentFilter}) {
+GetIt $initGetIt(
+  GetIt getIt, {
+  String? environment,
+  EnvironmentFilter? environmentFilter,
+}) {
   // Services
   getIt.registerSingleton<ApiService>(ApiService());
   getIt.registerSingleton<StorageService>(StorageService());
@@ -35,25 +40,39 @@ GetIt $initGetIt(GetIt getIt, {String? environment, EnvironmentFilter? environme
   getIt.registerSingleton<AppRouter>(AppRouter());
 
   // Data sources
-  getIt.registerFactory<AuthDataSource>(() => AuthDataSource(getIt<ApiService>()));
-  getIt.registerFactory<CourseDataSource>(() => CourseDataSource(getIt<ApiService>()));
+  getIt.registerFactory<AuthDataSource>(
+    () => AuthDataSource(getIt<ApiService>()),
+  );
+  getIt.registerFactory<CourseDataSource>(
+    () => CourseDataSource(getIt<ApiService>()),
+  );
 
   // Repositories
-  getIt.registerFactory<AuthRepository>(() => AuthRepositoryImpl(getIt<AuthDataSource>(), getIt<StorageService>()));
-  getIt.registerFactory<CourseRepository>(() => CourseRepositoryImpl(getIt<CourseDataSource>()));
+  getIt.registerFactory<AuthRepository>(
+    () => AuthRepositoryImpl(getIt<AuthDataSource>(), getIt<StorageService>()),
+  );
+  getIt.registerFactory<CourseRepository>(
+    () => CourseRepositoryImpl(getIt<CourseDataSource>()),
+  );
 
   // Use cases
-  getIt.registerFactory<LoginUseCase>(() => LoginUseCase(getIt<AuthRepository>()));
-  getIt.registerFactory<GetCoursesUseCase>(() => GetCoursesUseCase(getIt<CourseRepository>()));
+  getIt.registerFactory<LoginUseCase>(
+    () => LoginUseCase(getIt<AuthRepository>()),
+  );
+  getIt.registerFactory<GetCoursesUseCase>(
+    () => GetCoursesUseCase(getIt<CourseRepository>()),
+  );
 
   // BLoCs
-  getIt.registerFactory<AuthBloc>(() => AuthBloc(
-        loginUseCase: getIt<LoginUseCase>(),
-        storageService: getIt<StorageService>(),
-      ));
-  getIt.registerFactory<StudentDashboardBloc>(() => StudentDashboardBloc(
-        getCoursesUseCase: getIt<GetCoursesUseCase>(),
-      ));
+  getIt.registerFactory<AuthBloc>(
+    () => AuthBloc(
+      loginUseCase: getIt<LoginUseCase>(),
+      storageService: getIt<StorageService>(),
+    ),
+  );
+  getIt.registerFactory<StudentDashboardBloc>(
+    () => StudentDashboardBloc(getCoursesUseCase: getIt<GetCoursesUseCase>()),
+  );
   getIt.registerFactory<TeacherDashboardBloc>(() => TeacherDashboardBloc());
   getIt.registerFactory<AdminDashboardBloc>(() => AdminDashboardBloc());
 
