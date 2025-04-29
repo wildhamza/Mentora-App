@@ -45,7 +45,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final _appRouter = AppRouter();
+  final AppRouter _appRouter = AppRouter();
 
   @override
   void initState() {
