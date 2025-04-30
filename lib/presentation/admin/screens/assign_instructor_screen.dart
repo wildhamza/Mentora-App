@@ -1,477 +1,372 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mentora/core/themes/app_theme.dart';
-import 'package:mentora/core/widgets/app_button.dart';
-import 'package:mentora/core/widgets/app_text_field.dart';
-import 'package:mentora/core/widgets/loading_indicator.dart';
-import 'package:mentora/di/injection.dart';
-import 'package:mentora/domain/entities/course.dart';
-import 'package:mentora/presentation/admin/bloc/admin_dashboard_bloc.dart';
-import 'package:mentora/presentation/admin/bloc/admin_dashboard_event.dart';
-import 'package:mentora/presentation/admin/bloc/admin_dashboard_state.dart';
-import 'package:mentora/presentation/common/widgets/error_widget.dart';
+import 'package:provider/provider.dart';
+import '../../../core/theme.dart';
+import '../../../providers/course_provider.dart';
+import '../../common/loading_widget.dart';
+import '../../common/error_widget.dart';
+import '../../common/app_button.dart';
 
-@RoutePage()
 class AssignInstructorScreen extends StatefulWidget {
-  final int? courseId;
+  final int courseId;
 
-  const AssignInstructorScreen({
-    Key? key,
-    @QueryParam('courseId') this.courseId,
-  }) : super(key: key);
+  const AssignInstructorScreen({Key? key, required this.courseId})
+    : super(key: key);
 
   @override
-  _AssignInstructorScreenState createState() => _AssignInstructorScreenState();
+  State<AssignInstructorScreen> createState() => _AssignInstructorScreenState();
 }
 
 class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
-  late AdminDashboardBloc _dashboardBloc;
-  final TextEditingController _searchController = TextEditingController();
-  
+  late final CourseProvider _courseProvider;
   bool _isLoading = false;
-  bool _isSubmitting = false;
-  Course? _selectedCourse;
-  List<Course> _courses = [];
+  String? _searchQuery;
   int? _selectedInstructorId;
-  
-  // Mock teacher data for demonstration
-  final List<Teacher> _teachers = [
-    Teacher(id: 1, name: 'Dr. Ahmed Khan', email: 'ahmed.khan@example.com', expertise: 'Computer Science'),
-    Teacher(id: 2, name: 'Prof. Fatima Ali', email: 'fatima.ali@example.com', expertise: 'Mathematics'),
-    Teacher(id: 3, name: 'Dr. Muhammad Usman', email: 'muhammad.usman@example.com', expertise: 'Biology'),
-    Teacher(id: 4, name: 'Ms. Ayesha Malik', email: 'ayesha.malik@example.com', expertise: 'English Literature'),
-    Teacher(id: 5, name: 'Dr. Imran Hussain', email: 'imran.hussain@example.com', expertise: 'Physics'),
-    Teacher(id: 6, name: 'Prof. Zainab Ahmed', email: 'zainab.ahmed@example.com', expertise: 'Psychology'),
+
+  // Mock data for instructors
+  final List<Map<String, dynamic>> _instructors = [
+    {'id': 1, 'name': 'Dr. Ahmed Khan', 'subject': 'Mathematics', 'courses': 2},
+    {
+      'id': 2,
+      'name': 'Prof. Sara Ali',
+      'subject': 'Computer Science',
+      'courses': 1,
+    },
+    {'id': 3, 'name': 'Dr. Hamza Malik', 'subject': 'Physics', 'courses': 3},
+    {
+      'id': 4,
+      'name': 'Prof. Aisha Jabeen',
+      'subject': 'English Literature',
+      'courses': 0,
+    },
+    {'id': 5, 'name': 'Dr. Farooq Ahmed', 'subject': 'Chemistry', 'courses': 1},
+    {
+      'id': 6,
+      'name': 'Prof. Zainab Fatima',
+      'subject': 'History',
+      'courses': 2,
+    },
+    {'id': 7, 'name': 'Dr. Umar Khalid', 'subject': 'Biology', 'courses': 1},
   ];
-  
-  List<Teacher> _filteredTeachers = [];
-  
+
   @override
   void initState() {
     super.initState();
-    _dashboardBloc = getIt<AdminDashboardBloc>();
-    _filteredTeachers = List.from(_teachers);
-    
-    if (widget.courseId != null) {
-      _loadCourseDetails(widget.courseId!);
-    } else {
-      _loadCourses();
-    }
-  }
-  
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+    _courseProvider = Provider.of<CourseProvider>(context, listen: false);
+    _loadCourseData();
   }
 
-  void _loadCourseDetails(int courseId) {
+  Future<void> _loadCourseData() async {
     setState(() {
       _isLoading = true;
     });
-    
-    _dashboardBloc.add(LoadCourseDetailsEvent(courseId));
+
+    await _courseProvider.fetchCourseById(widget.courseId);
+
+    final course = _courseProvider.selectedCourse;
+    if (course != null && course.instructorId != null) {
+      setState(() {
+        _selectedInstructorId = course.instructorId;
+      });
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
-  void _loadCourses() {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    _dashboardBloc.add(const LoadCoursesEvent());
-  }
-  
-  void _searchTeachers(String query) {
-    setState(() {
-      if (query.isNotEmpty) {
-        _filteredTeachers = _teachers.where((teacher) {
-          return teacher.name.toLowerCase().contains(query.toLowerCase()) ||
-              teacher.email.toLowerCase().contains(query.toLowerCase()) ||
-              teacher.expertise.toLowerCase().contains(query.toLowerCase());
-        }).toList();
-      } else {
-        _filteredTeachers = List.from(_teachers);
-      }
-    });
-  }
-  
-  void _assignInstructor() {
-    if (_selectedCourse == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a course'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
-      return;
+  List<Map<String, dynamic>> _getFilteredInstructors() {
+    if (_searchQuery == null || _searchQuery!.isEmpty) {
+      return _instructors;
     }
-    
+
+    final query = _searchQuery!.toLowerCase();
+    return _instructors.where((instructor) {
+      final name = instructor['name'].toString().toLowerCase();
+      final subject = instructor['subject'].toString().toLowerCase();
+      return name.contains(query) || subject.contains(query);
+    }).toList();
+  }
+
+  Future<void> _assignInstructor() async {
     if (_selectedInstructorId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select an instructor'),
-          backgroundColor: AppTheme.errorColor,
+          content: Text('Please select an instructor to assign'),
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
     }
-    
+
     setState(() {
-      _isSubmitting = true;
+      _isLoading = true;
     });
-    
-    _dashboardBloc.add(AssignInstructorEvent(
-      courseId: _selectedCourse!.id,
-      instructorId: _selectedInstructorId!,
-    ));
+
+    final success = await _courseProvider.assignInstructor(
+      widget.courseId,
+      _selectedInstructorId!,
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Instructor assigned successfully'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      Navigator.of(context).pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _courseProvider.error ??
+                'Failed to assign instructor. Please try again.',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _dashboardBloc,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Assign Instructor'),
-          backgroundColor: AppTheme.adminColor,
-        ),
-        body: BlocConsumer<AdminDashboardBloc, AdminDashboardState>(
-          listener: (context, state) {
-            if (state is CourseDetailsLoaded) {
-              setState(() {
-                _selectedCourse = state.course;
-                _isLoading = false;
-                
-                // If course already has an instructor, pre-select them
-                if (_selectedCourse!.instructorId != null) {
-                  _selectedInstructorId = _selectedCourse!.instructorId;
-                }
-              });
-            } else if (state is CoursesLoaded) {
-              setState(() {
-                _courses = state.courses;
-                if (_courses.isNotEmpty && _selectedCourse == null) {
-                  _selectedCourse = _courses.first;
-                }
-                _isLoading = false;
-              });
-            } else if (state is InstructorAssigned) {
-              setState(() {
-                _isSubmitting = false;
-              });
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: AppTheme.successColor,
-                ),
-              );
-              
-              // Navigate back after a short delay
-              Future.delayed(const Duration(seconds: 2), () {
-                context.router.pop();
-              });
-            } else if (state is AdminDashboardError) {
-              setState(() {
-                _isSubmitting = false;
-                _isLoading = false;
-              });
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: AppTheme.errorColor,
-                ),
-              );
-            }
-          },
-          builder: (context, state) {
-            if (_isLoading) {
-              return const LoadingIndicator(
-                message: 'Loading data...',
-              );
-            }
-            
-            return Column(
-              children: [
-                // Course selection section
-                Card(
-                  margin: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
+    return Scaffold(
+      appBar: AppBar(title: const Text('Assign Instructor')),
+      body:
+          _isLoading
+              ? const LoadingWidget(message: 'Loading data...')
+              : _courseProvider.selectedCourse == null
+              ? AppErrorWidget(
+                message: 'Could not load course data',
+                onRetry: _loadCourseData,
+              )
+              : Column(
+                children: [
+                  // Course info card
+                  Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Course',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
                           ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Course Information',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          _buildCourseInfoRow(
+                            label: 'Title',
+                            value: _courseProvider.selectedCourse!.title,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildCourseInfoRow(
+                            label: 'Current Instructor',
+                            value:
+                                _courseProvider
+                                    .selectedCourse!
+                                    .instructorName ??
+                                'None',
+                          ),
+                          const SizedBox(height: 8),
+                          _buildCourseInfoRow(
+                            label: 'Students',
+                            value:
+                                '${_courseProvider.selectedCourse!.enrolledCount}/${_courseProvider.selectedCourse!.capacity}',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Search bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search instructors',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(height: 8),
-                        widget.courseId != null
-                            ? _buildSelectedCourseInfo()
-                            : _buildCourseDropdown(),
-                      ],
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
                     ),
                   ),
-                ),
-                
-                // Teachers search and list
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: AppTextField(
-                    label: 'Search Instructors',
-                    hint: 'Search by name, email or expertise',
-                    controller: _searchController,
-                    prefixIcon: Icons.search,
-                    onChanged: _searchTeachers,
-                    suffixIcon: Icons.clear,
-                    onSuffixIconPressed: () {
-                      _searchController.clear();
-                      _searchTeachers('');
-                    },
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'Available Instructors',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                
-                Expanded(
-                  child: _filteredTeachers.isEmpty
-                      ? const EmptyStateView(
-                          title: 'No Instructors Found',
-                          message: 'Try adjusting your search criteria.',
-                          icon: Icons.person_search,
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _filteredTeachers.length,
-                          itemBuilder: (context, index) {
-                            final teacher = _filteredTeachers[index];
-                            final isSelected = _selectedInstructorId == teacher.id;
-                            
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? AppTheme.adminColor
+
+                  const SizedBox(height: 16),
+
+                  // Instructors list
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _getFilteredInstructors().length,
+                      itemBuilder: (context, index) {
+                        final instructor = _getFilteredInstructors()[index];
+                        final isSelected =
+                            _selectedInstructorId == instructor['id'];
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color:
+                                  isSelected
+                                      ? AppColors.primary
                                       : Colors.transparent,
-                                  width: 2,
-                                ),
-                              ),
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedInstructorId = teacher.id;
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(8),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 24,
-                                        backgroundColor: isSelected
-                                            ? AppTheme.adminColor
-                                            : Colors.grey[300],
-                                        child: Icon(
-                                          Icons.person,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : Colors.grey[700],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              teacher.name,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
+                              width: isSelected ? 2 : 0,
+                            ),
+                          ),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedInstructorId = instructor['id'];
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor:
+                                        isSelected
+                                            ? AppColors.primary
+                                            : AppColors.secondary.withOpacity(
+                                              0.1,
                                             ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              teacher.email,
-                                              style: const TextStyle(
-                                                color: AppTheme.textSecondaryColor,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              'Expertise: ${teacher.expertise}',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                    child: Text(
+                                      instructor['name'].toString().substring(
+                                        0,
+                                        1,
                                       ),
-                                      Radio<int>(
-                                        value: teacher.id,
-                                        groupValue: _selectedInstructorId,
-                                        activeColor: AppTheme.adminColor,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _selectedInstructorId = value;
-                                          });
-                                        },
+                                      style: TextStyle(
+                                        color:
+                                            isSelected
+                                                ? Colors.white
+                                                : AppColors.secondary,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          instructor['name'],
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          instructor['subject'],
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${instructor['courses']} active courses',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Radio<int>(
+                                    value: instructor['id'],
+                                    groupValue: _selectedInstructorId,
+                                    activeColor: AppColors.primary,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedInstructorId = value;
+                                      });
+                                    },
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
-                ),
-                
-                // Assign button
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: AppButton(
-                    text: 'Assign Instructor',
-                    onPressed: _assignInstructor,
-                    isLoading: _isSubmitting,
-                    isFullWidth: true,
-                    size: AppButtonSize.large,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+
+                  // Assign button
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: AppButton(
+                      text: 'Assign Instructor',
+                      onPressed: _assignInstructor,
+                      isLoading: _isLoading,
+                      isFullWidth: true,
+                    ),
+                  ),
+                ],
+              ),
     );
   }
 
-  Widget _buildSelectedCourseInfo() {
-    if (_selectedCourse == null) {
-      return const Text('Loading course information...');
-    }
-    
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppTheme.adminColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.school,
-              color: AppTheme.adminColor,
-              size: 24,
+  Widget _buildCourseInfoRow({required String label, required String value}) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _selectedCourse!.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Current Instructor: ${_selectedCourse!.instructorName ?? 'None'}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: _selectedCourse!.instructorName != null 
-                        ? AppTheme.successColor 
-                        : AppTheme.textSecondaryColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCourseDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.dividerColor),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<Course>(
-          value: _selectedCourse,
-          isExpanded: true,
-          hint: const Text('Select a course'),
-          items: _courses.map((Course course) {
-            return DropdownMenuItem<Course>(
-              value: course,
-              child: Text(course.title),
-            );
-          }).toList(),
-          onChanged: (Course? newValue) {
-            if (newValue != null) {
-              setState(() {
-                _selectedCourse = newValue;
-                // If course already has an instructor, pre-select them
-                if (_selectedCourse!.instructorId != null) {
-                  _selectedInstructorId = _selectedCourse!.instructorId;
-                } else {
-                  _selectedInstructorId = null;
-                }
-              });
-            }
-          },
         ),
-      ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
     );
   }
-}
-
-class Teacher {
-  final int id;
-  final String name;
-  final String email;
-  final String expertise;
-
-  Teacher({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.expertise,
-  });
 }

@@ -1,40 +1,32 @@
 import 'package:equatable/equatable.dart';
 
-import '../../domain/entities/course.dart';
-
 class CourseModel extends Equatable {
   final int id;
   final String title;
   final String description;
-  final int durationMinutes;
-  final double fee;
+  final double fees;
   final int capacity;
-  final String status;
-  final String? thumbnailUrl;
+  final DateTime? startDate;
+  final DateTime? endDate;
   final int? instructorId;
   final String? instructorName;
-  final DateTime? enrollmentStartDate;
-  final DateTime? enrollmentEndDate;
-  final int enrolledStudents;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final int enrolledCount;
+  final bool isEnrollmentOpen;
+  final String? thumbnail;
 
   const CourseModel({
     required this.id,
     required this.title,
     required this.description,
-    required this.durationMinutes,
-    required this.fee,
+    required this.fees,
     required this.capacity,
-    required this.status,
-    this.thumbnailUrl,
+    this.startDate,
+    this.endDate,
     this.instructorId,
     this.instructorName,
-    this.enrollmentStartDate,
-    this.enrollmentEndDate,
-    required this.enrolledStudents,
-    required this.createdAt,
-    required this.updatedAt,
+    this.enrolledCount = 0,
+    this.isEnrollmentOpen = false,
+    this.thumbnail,
   });
 
   factory CourseModel.fromJson(Map<String, dynamic> json) {
@@ -42,22 +34,15 @@ class CourseModel extends Equatable {
       id: json['id'],
       title: json['title'],
       description: json['description'],
-      durationMinutes: json['duration_minutes'],
-      fee: json['fee'].toDouble(),
+      fees: json['fees'].toDouble(),
       capacity: json['capacity'],
-      status: json['status'],
-      thumbnailUrl: json['thumbnail_url'],
+      startDate: json['start_date'] != null ? DateTime.parse(json['start_date']) : null,
+      endDate: json['end_date'] != null ? DateTime.parse(json['end_date']) : null,
       instructorId: json['instructor_id'],
       instructorName: json['instructor_name'],
-      enrollmentStartDate: json['enrollment_start_date'] != null 
-          ? DateTime.parse(json['enrollment_start_date']) 
-          : null,
-      enrollmentEndDate: json['enrollment_end_date'] != null 
-          ? DateTime.parse(json['enrollment_end_date']) 
-          : null,
-      enrolledStudents: json['enrolled_students'] ?? 0,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      enrolledCount: json['enrolled_count'] ?? 0,
+      isEnrollmentOpen: json['is_enrollment_open'] ?? false,
+      thumbnail: json['thumbnail'],
     );
   }
 
@@ -66,107 +51,56 @@ class CourseModel extends Equatable {
       'id': id,
       'title': title,
       'description': description,
-      'duration_minutes': durationMinutes,
-      'fee': fee,
+      'fees': fees,
       'capacity': capacity,
-      'status': status,
-      'thumbnail_url': thumbnailUrl,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
       'instructor_id': instructorId,
       'instructor_name': instructorName,
-      'enrollment_start_date': enrollmentStartDate?.toIso8601String(),
-      'enrollment_end_date': enrollmentEndDate?.toIso8601String(),
-      'enrolled_students': enrolledStudents,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'enrolled_count': enrolledCount,
+      'is_enrollment_open': isEnrollmentOpen,
+      'thumbnail': thumbnail,
     };
   }
 
-  // Convert to domain entity
-  Course toEntity() {
-    return Course(
-      id: id,
-      title: title,
-      description: description,
-      durationMinutes: durationMinutes,
-      fee: fee,
-      capacity: capacity,
-      status: status,
-      thumbnailUrl: thumbnailUrl,
-      instructorId: instructorId,
-      instructorName: instructorName,
-      enrollmentStartDate: enrollmentStartDate,
-      enrollmentEndDate: enrollmentEndDate,
-      enrolledStudents: enrolledStudents,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
-    );
-  }
+  bool get isFull => enrolledCount >= capacity;
 
-  // Create model from entity
-  factory CourseModel.fromEntity(Course course) {
+  bool get hasInstructor => instructorId != null;
+
+  CourseModel copyWith({
+    int? id,
+    String? title,
+    String? description,
+    double? fees,
+    int? capacity,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? instructorId,
+    String? instructorName,
+    int? enrolledCount,
+    bool? isEnrollmentOpen,
+    String? thumbnail,
+  }) {
     return CourseModel(
-      id: course.id,
-      title: course.title,
-      description: course.description,
-      durationMinutes: course.durationMinutes,
-      fee: course.fee,
-      capacity: course.capacity,
-      status: course.status,
-      thumbnailUrl: course.thumbnailUrl,
-      instructorId: course.instructorId,
-      instructorName: course.instructorName,
-      enrollmentStartDate: course.enrollmentStartDate,
-      enrollmentEndDate: course.enrollmentEndDate,
-      enrolledStudents: course.enrolledStudents,
-      createdAt: course.createdAt,
-      updatedAt: course.updatedAt,
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      fees: fees ?? this.fees,
+      capacity: capacity ?? this.capacity,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      instructorId: instructorId ?? this.instructorId,
+      instructorName: instructorName ?? this.instructorName,
+      enrolledCount: enrolledCount ?? this.enrolledCount,
+      isEnrollmentOpen: isEnrollmentOpen ?? this.isEnrollmentOpen,
+      thumbnail: thumbnail ?? this.thumbnail,
     );
   }
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        description,
-        durationMinutes,
-        fee,
-        capacity,
-        status,
-        thumbnailUrl,
-        instructorId,
-        instructorName,
-        enrollmentStartDate,
-        enrollmentEndDate,
-        enrolledStudents,
-        createdAt,
-        updatedAt,
-      ];
-}
-
-class CourseResponseModel extends Equatable {
-  final List<CourseModel> courses;
-  final int total;
-  final int page;
-  final int limit;
-
-  const CourseResponseModel({
-    required this.courses,
-    required this.total,
-    required this.page,
-    required this.limit,
-  });
-
-  factory CourseResponseModel.fromJson(Map<String, dynamic> json) {
-    return CourseResponseModel(
-      courses: (json['data'] as List)
-          .map((courseJson) => CourseModel.fromJson(courseJson))
-          .toList(),
-      total: json['meta']['total'],
-      page: json['meta']['page'],
-      limit: json['meta']['limit'],
-    );
-  }
-
-  @override
-  List<Object?> get props => [courses, total, page, limit];
+    id, title, description, fees, capacity, startDate,
+    endDate, instructorId, instructorName, enrolledCount,
+    isEnrollmentOpen, thumbnail
+  ];
 }

@@ -1,15 +1,14 @@
 import 'package:equatable/equatable.dart';
-
-import '../../domain/entities/user.dart';
+import '../../core/constants.dart';
 
 class UserModel extends Equatable {
   final int id;
   final String name;
   final String email;
-  final String role;
+  final UserRole role;
   final String? profileImage;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String? phoneNumber;
+  final String? token;
 
   const UserModel({
     required this.id,
@@ -17,95 +16,78 @@ class UserModel extends Equatable {
     required this.email,
     required this.role,
     this.profileImage,
-    required this.createdAt,
-    required this.updatedAt,
+    this.phoneNumber,
+    this.token,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    UserRole mapRole(String role) {
+      switch (role) {
+        case 'admin':
+          return UserRole.admin;
+        case 'teacher':
+          return UserRole.teacher;
+        case 'student':
+          return UserRole.student;
+        default:
+          return UserRole.student;
+      }
+    }
+
     return UserModel(
       id: json['id'],
       name: json['name'],
       email: json['email'],
-      role: json['role'],
+      role: mapRole(json['role']),
       profileImage: json['profile_image'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      phoneNumber: json['phone_number'],
+      token: json['token'],
     );
   }
 
   Map<String, dynamic> toJson() {
+    String mapRoleToString(UserRole role) {
+      switch (role) {
+        case UserRole.admin:
+          return 'admin';
+        case UserRole.teacher:
+          return 'teacher';
+        case UserRole.student:
+          return 'student';
+      }
+    }
+
     return {
       'id': id,
       'name': name,
       'email': email,
-      'role': role,
+      'role': mapRoleToString(role),
       'profile_image': profileImage,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
-  }
-
-  // Convert to domain entity
-  User toEntity() {
-    return User(
-      id: id,
-      name: name,
-      email: email,
-      role: role,
-      profileImage: profileImage,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
-    );
-  }
-
-  // Create model from entity
-  factory UserModel.fromEntity(User user) {
-    return UserModel(
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      profileImage: user.profileImage,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        id,
-        name,
-        email,
-        role,
-        profileImage,
-        createdAt,
-        updatedAt,
-      ];
-}
-
-class AuthResponseModel extends Equatable {
-  final String token;
-  final UserModel user;
-
-  const AuthResponseModel({
-    required this.token,
-    required this.user,
-  });
-
-  factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
-    return AuthResponseModel(
-      token: json['token'],
-      user: UserModel.fromJson(json['user']),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
+      'phone_number': phoneNumber,
       'token': token,
-      'user': user.toJson(),
     };
   }
 
+  UserModel copyWith({
+    int? id,
+    String? name,
+    String? email,
+    UserRole? role,
+    String? profileImage,
+    String? phoneNumber,
+    String? token,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      profileImage: profileImage ?? this.profileImage,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      token: token ?? this.token,
+    );
+  }
+
   @override
-  List<Object?> get props => [token, user];
+  List<Object?> get props => [id, name, email, role, profileImage, phoneNumber, token];
 }

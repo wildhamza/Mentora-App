@@ -1,509 +1,727 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:mentora/core/themes/app_theme.dart';
-import 'package:mentora/core/widgets/app_button.dart';
-import 'package:mentora/core/widgets/app_text_field.dart';
-import 'package:mentora/core/widgets/loading_indicator.dart';
-import 'package:mentora/di/injection.dart';
-import 'package:mentora/domain/entities/course.dart';
-import 'package:mentora/presentation/teacher/bloc/teacher_dashboard_bloc.dart';
-import 'package:mentora/presentation/teacher/bloc/teacher_dashboard_event.dart';
-import 'package:mentora/presentation/teacher/bloc/teacher_dashboard_state.dart';
+import '../../../core/theme.dart';
+import '../../../providers/course_provider.dart';
+import '../../common/loading_widget.dart';
+import '../../common/error_widget.dart';
+import '../../common/app_button.dart';
+import '../../common/app_text_field.dart';
 
-@RoutePage()
 class ScheduleSessionScreen extends StatefulWidget {
-  const ScheduleSessionScreen({Key? key}) : super(key: key);
+  final int courseId;
+
+  const ScheduleSessionScreen({Key? key, required this.courseId})
+    : super(key: key);
 
   @override
-  _ScheduleSessionScreenState createState() => _ScheduleSessionScreenState();
+  State<ScheduleSessionScreen> createState() => _ScheduleSessionScreenState();
 }
 
 class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
+  late final CourseProvider _courseProvider;
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _meetingLinkController = TextEditingController();
-  
-  late TeacherDashboardBloc _dashboardBloc;
-  List<Course> _teacherCourses = [];
-  Course? _selectedCourse;
+
   DateTime _sessionDate = DateTime.now().add(const Duration(days: 1));
-  TimeOfDay _sessionTime = TimeOfDay.now();
-  int _durationMinutes = 60;
-  bool _isSubmitting = false;
-  
-  List<int> _durationOptions = [30, 45, 60, 90, 120, 180];
-  
+  TimeOfDay _startTime = TimeOfDay.now();
+  TimeOfDay _endTime = TimeOfDay.now().replacing(
+    hour: TimeOfDay.now().hour + 1,
+  );
+  String _sessionType = 'live';
+  bool _isRecordingEnabled = true;
+  bool _isLoading = false;
+
+  // Mock data for sessions
+  final List<Map<String, dynamic>> _scheduledSessions = [
+    {
+      'id': 1,
+      'title': 'Introduction to Programming',
+      'date': DateTime.now().add(const Duration(days: 2)),
+      'start_time': const TimeOfDay(hour: 10, minute: 0),
+      'end_time': const TimeOfDay(hour: 11, minute: 30),
+      'type': 'live',
+      'recording_enabled': true,
+    },
+    {
+      'id': 2,
+      'title': 'Data Structures Overview',
+      'date': DateTime.now().add(const Duration(days: 5)),
+      'start_time': const TimeOfDay(hour: 14, minute: 0),
+      'end_time': const TimeOfDay(hour: 15, minute: 30),
+      'type': 'live',
+      'recording_enabled': true,
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
-    _dashboardBloc = getIt<TeacherDashboardBloc>();
-    _dashboardBloc.add(LoadTeacherCoursesEvent());
+    _courseProvider = Provider.of<CourseProvider>(context, listen: false);
+    _loadCourseData();
   }
-  
+
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _meetingLinkController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+  Future<void> _loadCourseData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    await _courseProvider.fetchCourseById(widget.courseId);
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _selectSessionDate() async {
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _sessionDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.teacherColor,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppTheme.textPrimaryColor,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
-    
-    if (picked != null && picked != _sessionDate) {
+
+    if (pickedDate != null && pickedDate != _sessionDate) {
       setState(() {
-        _sessionDate = picked;
+        _sessionDate = pickedDate;
       });
     }
   }
 
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
+  Future<void> _selectStartTime() async {
+    final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
-      initialTime: _sessionTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.teacherColor,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppTheme.textPrimaryColor,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      initialTime: _startTime,
     );
-    
-    if (picked != null && picked != _sessionTime) {
+
+    if (pickedTime != null && pickedTime != _startTime) {
       setState(() {
-        _sessionTime = picked;
+        _startTime = pickedTime;
+
+        // If end time is before start time, update it
+        if (_timeToDouble(_endTime) <= _timeToDouble(_startTime)) {
+          _endTime = TimeOfDay(
+            hour: (_startTime.hour + 1) % 24,
+            minute: _startTime.minute,
+          );
+        }
       });
     }
   }
-  
-  void _scheduleSession() {
-    if (_formKey.currentState!.validate() && _selectedCourse != null) {
+
+  Future<void> _selectEndTime() async {
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: _endTime,
+    );
+
+    if (pickedTime != null && pickedTime != _endTime) {
       setState(() {
-        _isSubmitting = true;
+        if (_timeToDouble(pickedTime) > _timeToDouble(_startTime)) {
+          _endTime = pickedTime;
+        } else {
+          // Show error if end time is before start time
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('End time must be after start time'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       });
-      
-      // Combine date and time into a single DateTime
-      final startTime = DateTime(
-        _sessionDate.year,
-        _sessionDate.month,
-        _sessionDate.day,
-        _sessionTime.hour,
-        _sessionTime.minute,
-      );
-      
-      _dashboardBloc.add(ScheduleSessionEvent(
-        courseId: _selectedCourse!.id,
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        startTime: startTime,
-        durationMinutes: _durationMinutes,
-        meetingLink: _meetingLinkController.text.trim(),
-      ));
-    } else if (_selectedCourse == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a course'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
     }
+  }
+
+  double _timeToDouble(TimeOfDay time) {
+    return time.hour + time.minute / 60.0;
+  }
+
+  Future<void> _scheduleSession() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Mock scheduling session
+    await Future.delayed(const Duration(seconds: 1));
+
+    setState(() {
+      _isLoading = false;
+
+      // Add the new session to the mock list
+      _scheduledSessions.add({
+        'id': _scheduledSessions.length + 1,
+        'title': _titleController.text,
+        'date': _sessionDate,
+        'start_time': _startTime,
+        'end_time': _endTime,
+        'type': _sessionType,
+        'recording_enabled': _isRecordingEnabled,
+      });
+
+      // Clear form
+      _titleController.clear();
+      _descriptionController.clear();
+    });
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Session scheduled successfully'),
+        backgroundColor: AppColors.success,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _dashboardBloc,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Schedule Live Session'),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Schedule Session - ${_courseProvider.selectedCourse?.title ?? "Course"}',
         ),
-        body: BlocConsumer<TeacherDashboardBloc, TeacherDashboardState>(
-          listener: (context, state) {
-            if (state is TeacherCoursesLoaded) {
-              setState(() {
-                _teacherCourses = state.courses;
-                if (_teacherCourses.isNotEmpty && _selectedCourse == null) {
-                  _selectedCourse = _teacherCourses.first;
-                }
-              });
-            } else if (state is SessionScheduled) {
-              setState(() {
-                _isSubmitting = false;
-              });
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: AppTheme.successColor,
+      ),
+      body:
+          _isLoading
+              ? const LoadingWidget(message: 'Loading course data...')
+              : _courseProvider.selectedCourse == null
+              ? AppErrorWidget(
+                message: 'Could not load course data',
+                onRetry: _loadCourseData,
+              )
+              : SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildUpcomingSessionsSection(),
+                      const SizedBox(height: 24),
+                      _buildNewSessionForm(),
+                    ],
+                  ),
                 ),
-              );
-              
-              // Reset form after successful scheduling
-              _titleController.clear();
-              _descriptionController.clear();
-              _meetingLinkController.clear();
-              
-              // Navigate back after a short delay
-              Future.delayed(const Duration(seconds: 2), () {
-                context.router.pop();
-              });
-            } else if (state is TeacherDashboardError) {
-              setState(() {
-                _isSubmitting = false;
-              });
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: AppTheme.errorColor,
+              ),
+    );
+  }
+
+  Widget _buildUpcomingSessionsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Upcoming Sessions',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        if (_scheduledSessions.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
                 ),
-              );
-            }
-          },
-          builder: (context, state) {
-            if (state is TeacherDashboardLoading && _teacherCourses.isEmpty) {
-              return const LoadingIndicator(
-                message: 'Loading courses...',
-              );
-            }
-            
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Course selection
-                    const Text(
-                      'Select Course',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildCourseDropdown(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Session details
-                    const Text(
-                      'Session Details',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Title field
-                    AppTextField(
-                      label: 'Session Title',
-                      hint: 'Enter session title',
-                      controller: _titleController,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Description field
-                    AppTextField(
-                      label: 'Description',
-                      hint: 'Enter session description',
-                      controller: _descriptionController,
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a description';
-                        }
-                        return null;
-                      },
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Session date and time
-                    const Text(
-                      'Session Schedule',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Date selection
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Date',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: () => _selectDate(context),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppTheme.dividerColor),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.calendar_today,
-                                        color: AppTheme.teacherColor,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        DateFormat('MMM d, yyyy').format(_sessionDate),
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Time selection
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Time',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: () => _selectTime(context),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppTheme.dividerColor),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.access_time,
-                                        color: AppTheme.teacherColor,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _sessionTime.format(context),
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Duration selection
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Duration',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppTheme.dividerColor),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<int>(
-                              value: _durationMinutes,
-                              isExpanded: true,
-                              items: _durationOptions.map((int duration) {
-                                return DropdownMenuItem<int>(
-                                  value: duration,
-                                  child: Text('$duration minutes'),
-                                );
-                              }).toList(),
-                              onChanged: (int? newValue) {
-                                if (newValue != null) {
-                                  setState(() {
-                                    _durationMinutes = newValue;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Meeting link
-                    const Text(
-                      'Meeting Information',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    AppTextField(
-                      label: 'Meeting Link',
-                      hint: 'Enter Zoom, Google Meet, or Dyte link',
-                      controller: _meetingLinkController,
-                      prefixIcon: Icons.link,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a meeting link';
-                        }
-                        if (!value.startsWith('http')) {
-                          return 'Please enter a valid URL';
-                        }
-                        return null;
-                      },
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
+              ],
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.event_busy, size: 48, color: AppColors.textHint),
+                const SizedBox(height: 16),
+                Text(
+                  'No upcoming sessions',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Schedule a new session using the form below',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _scheduledSessions.length,
+            itemBuilder: (context, index) {
+              final session = _scheduledSessions[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Icon(
-                            Icons.info,
-                            color: AppTheme.primaryColor,
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              session['type'] == 'live'
+                                  ? Icons.videocam
+                                  : Icons.video_library,
+                              color: AppColors.primary,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Text(
-                              'Students will receive a notification when you schedule this session.',
-                              style: TextStyle(
-                                color: AppTheme.primaryColor,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  session['title'],
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  DateFormat(
+                                    'EEEE, MMMM d, yyyy',
+                                  ).format(session['date']),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuButton(
+                            icon: const Icon(Icons.more_vert),
+                            itemBuilder:
+                                (context) => [
+                                  const PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit, size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Edit'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.delete,
+                                          size: 18,
+                                          color: AppColors.error,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Delete',
+                                          style: TextStyle(
+                                            color: AppColors.error,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                // Handle edit
+                              } else if (value == 'delete') {
+                                setState(() {
+                                  _scheduledSessions.removeAt(index);
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSessionInfoItem(
+                              icon: Icons.schedule,
+                              title: 'Time',
+                              content:
+                                  '${session['start_time'].format(context)} - ${session['end_time'].format(context)}',
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildSessionInfoItem(
+                              icon: Icons.videocam,
+                              title: 'Type',
+                              content:
+                                  session['type'] == 'live'
+                                      ? 'Live Session'
+                                      : 'Recorded',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                // Show session details or join session
+                              },
+                              icon: const Icon(Icons.info_outline),
+                              label: const Text('Details'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                // Handle start/join session
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Starting session...'),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.play_arrow),
+                              label: const Text('Start'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSessionInfoItem({
+    required IconData icon,
+    required String title,
+    required String content,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.textSecondary),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 2),
+            Text(content, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNewSessionForm() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Schedule New Session',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            AppTextField(
+              label: 'Session Title',
+              hint: 'Enter session title',
+              controller: _titleController,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a session title';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            AppTextField(
+              label: 'Description (Optional)',
+              hint: 'Enter session description',
+              controller: _descriptionController,
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Session Date',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _selectSessionDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: AppColors.textHint),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today,
+                      size: 20,
+                      color: AppColors.textSecondary,
                     ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Schedule button
-                    AppButton(
-                      text: 'Schedule Session',
-                      onPressed: _scheduleSession,
-                      isLoading: _isSubmitting,
-                      isFullWidth: true,
-                      size: AppButtonSize.large,
+                    const SizedBox(width: 8),
+                    Text(
+                      DateFormat('EEEE, MMMM d, yyyy').format(_sessionDate),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const Spacer(),
+                    const Icon(
+                      Icons.arrow_drop_down,
+                      color: AppColors.textSecondary,
                     ),
                   ],
                 ),
               ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCourseDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.dividerColor),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<Course>(
-          value: _selectedCourse,
-          isExpanded: true,
-          hint: const Text('Select a course'),
-          items: _teacherCourses.map((Course course) {
-            return DropdownMenuItem<Course>(
-              value: course,
-              child: Text(course.title),
-            );
-          }).toList(),
-          onChanged: (Course? newValue) {
-            if (newValue != null) {
-              setState(() {
-                _selectedCourse = newValue;
-              });
-            }
-          },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Start Time',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: _selectStartTime,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: AppColors.textHint),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.access_time,
+                                size: 20,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _startTime.format(context),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              const Spacer(),
+                              const Icon(
+                                Icons.arrow_drop_down,
+                                color: AppColors.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'End Time',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: _selectEndTime,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: AppColors.textHint),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.access_time,
+                                size: 20,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _endTime.format(context),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              const Spacer(),
+                              const Icon(
+                                Icons.arrow_drop_down,
+                                color: AppColors.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Session Type',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: AppColors.textHint),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    title: const Text('Live Session'),
+                    subtitle: const Text(
+                      'Real-time interactive video conference',
+                    ),
+                    value: 'live',
+                    groupValue: _sessionType,
+                    onChanged: (value) {
+                      setState(() {
+                        _sessionType = value!;
+                      });
+                    },
+                    activeColor: AppColors.primary,
+                  ),
+                  const Divider(height: 1),
+                  RadioListTile<String>(
+                    title: const Text('Pre-recorded Session'),
+                    subtitle: const Text('Upload a pre-recorded video'),
+                    value: 'recorded',
+                    groupValue: _sessionType,
+                    onChanged: (value) {
+                      setState(() {
+                        _sessionType = value!;
+                      });
+                    },
+                    activeColor: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Enable Recording'),
+              subtitle: const Text(
+                'Record this session for students to watch later',
+              ),
+              value: _isRecordingEnabled,
+              onChanged: (value) {
+                setState(() {
+                  _isRecordingEnabled = value;
+                });
+              },
+              activeColor: AppColors.primary,
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 24),
+            AppButton(
+              text: 'Schedule Session',
+              onPressed: _scheduleSession,
+              isLoading: _isLoading,
+              isFullWidth: true,
+            ),
+          ],
         ),
       ),
     );

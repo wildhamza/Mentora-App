@@ -8,11 +8,10 @@ class QuizModel extends Equatable {
   final DateTime startTime;
   final DateTime endTime;
   final int durationMinutes;
-  final int totalQuestions;
-  final int totalMarks;
-  final String status; // DRAFT, PUBLISHED
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final double totalMarks;
+  final List<QuestionModel> questions;
+  final double? obtainedMarks;
+  final DateTime? attemptedAt;
 
   const QuizModel({
     required this.id,
@@ -22,11 +21,10 @@ class QuizModel extends Equatable {
     required this.startTime,
     required this.endTime,
     required this.durationMinutes,
-    required this.totalQuestions,
     required this.totalMarks,
-    required this.status,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.questions,
+    this.obtainedMarks,
+    this.attemptedAt,
   });
 
   factory QuizModel.fromJson(Map<String, dynamic> json) {
@@ -38,11 +36,15 @@ class QuizModel extends Equatable {
       startTime: DateTime.parse(json['start_time']),
       endTime: DateTime.parse(json['end_time']),
       durationMinutes: json['duration_minutes'],
-      totalQuestions: json['total_questions'],
-      totalMarks: json['total_marks'],
-      status: json['status'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      totalMarks: json['total_marks'].toDouble(),
+      questions: json['questions'] != null
+          ? List<QuestionModel>.from(
+              json['questions'].map((q) => QuestionModel.fromJson(q)))
+          : [],
+      obtainedMarks: json['obtained_marks']?.toDouble(),
+      attemptedAt: json['attempted_at'] != null
+          ? DateTime.parse(json['attempted_at'])
+          : null,
     );
   }
 
@@ -55,185 +57,115 @@ class QuizModel extends Equatable {
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
       'duration_minutes': durationMinutes,
-      'total_questions': totalQuestions,
       'total_marks': totalMarks,
-      'status': status,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
-  }
-
-  @override
-  List<Object?> get props => [
-        id,
-        courseId,
-        title,
-        description,
-        startTime,
-        endTime,
-        durationMinutes,
-        totalQuestions,
-        totalMarks,
-        status,
-        createdAt,
-        updatedAt,
-      ];
-}
-
-class QuizQuestionModel extends Equatable {
-  final int id;
-  final int quizId;
-  final String question;
-  final String questionType; // MCQ, TRUE_FALSE, SHORT_ANSWER
-  final List<QuizOptionModel>? options;
-  final String? correctAnswer;
-  final int marks;
-
-  const QuizQuestionModel({
-    required this.id,
-    required this.quizId,
-    required this.question,
-    required this.questionType,
-    this.options,
-    this.correctAnswer,
-    required this.marks,
-  });
-
-  factory QuizQuestionModel.fromJson(Map<String, dynamic> json) {
-    return QuizQuestionModel(
-      id: json['id'],
-      quizId: json['quiz_id'],
-      question: json['question'],
-      questionType: json['question_type'],
-      options: json['options'] != null
-          ? (json['options'] as List)
-              .map((option) => QuizOptionModel.fromJson(option))
-              .toList()
-          : null,
-      correctAnswer: json['correct_answer'],
-      marks: json['marks'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'quiz_id': quizId,
-      'question': question,
-      'question_type': questionType,
-      'options': options?.map((option) => option.toJson()).toList(),
-      'correct_answer': correctAnswer,
-      'marks': marks,
-    };
-  }
-
-  @override
-  List<Object?> get props => [
-        id,
-        quizId,
-        question,
-        questionType,
-        options,
-        correctAnswer,
-        marks,
-      ];
-}
-
-class QuizOptionModel extends Equatable {
-  final String id;
-  final String text;
-
-  const QuizOptionModel({
-    required this.id,
-    required this.text,
-  });
-
-  factory QuizOptionModel.fromJson(Map<String, dynamic> json) {
-    return QuizOptionModel(
-      id: json['id'],
-      text: json['text'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'text': text,
-    };
-  }
-
-  @override
-  List<Object?> get props => [id, text];
-}
-
-class QuizAttemptModel extends Equatable {
-  final int id;
-  final int quizId;
-  final int studentId;
-  final DateTime startTime;
-  final DateTime? endTime;
-  final int obtainedMarks;
-  final int totalMarks;
-  final String status; // IN_PROGRESS, COMPLETED, TIMEOUT
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  const QuizAttemptModel({
-    required this.id,
-    required this.quizId,
-    required this.studentId,
-    required this.startTime,
-    this.endTime,
-    required this.obtainedMarks,
-    required this.totalMarks,
-    required this.status,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-
-  factory QuizAttemptModel.fromJson(Map<String, dynamic> json) {
-    return QuizAttemptModel(
-      id: json['id'],
-      quizId: json['quiz_id'],
-      studentId: json['student_id'],
-      startTime: DateTime.parse(json['start_time']),
-      endTime: json['end_time'] != null
-          ? DateTime.parse(json['end_time'])
-          : null,
-      obtainedMarks: json['obtained_marks'],
-      totalMarks: json['total_marks'],
-      status: json['status'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'quiz_id': quizId,
-      'student_id': studentId,
-      'start_time': startTime.toIso8601String(),
-      'end_time': endTime?.toIso8601String(),
+      'questions': questions.map((q) => q.toJson()).toList(),
       'obtained_marks': obtainedMarks,
-      'total_marks': totalMarks,
-      'status': status,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'attempted_at': attemptedAt?.toIso8601String(),
     };
+  }
+
+  bool get isAttempted => attemptedAt != null;
+  bool get isActive => DateTime.now().isAfter(startTime) && DateTime.now().isBefore(endTime);
+  bool get isUpcoming => DateTime.now().isBefore(startTime);
+  bool get isExpired => DateTime.now().isAfter(endTime);
+
+  QuizModel copyWith({
+    int? id,
+    int? courseId,
+    String? title,
+    String? description,
+    DateTime? startTime,
+    DateTime? endTime,
+    int? durationMinutes,
+    double? totalMarks,
+    List<QuestionModel>? questions,
+    double? obtainedMarks,
+    DateTime? attemptedAt,
+  }) {
+    return QuizModel(
+      id: id ?? this.id,
+      courseId: courseId ?? this.courseId,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      totalMarks: totalMarks ?? this.totalMarks,
+      questions: questions ?? this.questions,
+      obtainedMarks: obtainedMarks ?? this.obtainedMarks,
+      attemptedAt: attemptedAt ?? this.attemptedAt,
+    );
   }
 
   @override
   List<Object?> get props => [
-        id,
-        quizId,
-        studentId,
-        startTime,
-        endTime,
-        obtainedMarks,
-        totalMarks,
-        status,
-        createdAt,
-        updatedAt,
-      ];
+    id, courseId, title, description, startTime, endTime,
+    durationMinutes, totalMarks, questions, obtainedMarks, attemptedAt
+  ];
+}
+
+class QuestionModel extends Equatable {
+  final int id;
+  final String question;
+  final List<String> options;
+  final int correctOptionIndex;
+  final double marks;
+  final int? selectedOptionIndex;
+
+  const QuestionModel({
+    required this.id,
+    required this.question,
+    required this.options,
+    required this.correctOptionIndex,
+    required this.marks,
+    this.selectedOptionIndex,
+  });
+
+  factory QuestionModel.fromJson(Map<String, dynamic> json) {
+    return QuestionModel(
+      id: json['id'],
+      question: json['question'],
+      options: List<String>.from(json['options']),
+      correctOptionIndex: json['correct_option_index'],
+      marks: json['marks'].toDouble(),
+      selectedOptionIndex: json['selected_option_index'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'question': question,
+      'options': options,
+      'correct_option_index': correctOptionIndex,
+      'marks': marks,
+      'selected_option_index': selectedOptionIndex,
+    };
+  }
+
+  bool get isAnswered => selectedOptionIndex != null;
+  bool get isCorrect => selectedOptionIndex == correctOptionIndex;
+
+  QuestionModel copyWith({
+    int? id,
+    String? question,
+    List<String>? options,
+    int? correctOptionIndex,
+    double? marks,
+    int? selectedOptionIndex,
+  }) {
+    return QuestionModel(
+      id: id ?? this.id,
+      question: question ?? this.question,
+      options: options ?? this.options,
+      correctOptionIndex: correctOptionIndex ?? this.correctOptionIndex,
+      marks: marks ?? this.marks,
+      selectedOptionIndex: selectedOptionIndex ?? this.selectedOptionIndex,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    id, question, options, correctOptionIndex, marks, selectedOptionIndex
+  ];
 }
