@@ -66,6 +66,26 @@ class CourseModel extends Equatable {
   bool get isFull => enrolledCount >= capacity;
 
   bool get hasInstructor => instructorId != null;
+  
+  int? get currentEnrollment => enrolledCount;
+  
+  int? get maxCapacity => capacity;
+  
+  double? get fee => fees;
+  
+  String? get duration {
+    if (startDate != null && endDate != null) {
+      final difference = endDate!.difference(startDate!);
+      final days = difference.inDays;
+      if (days > 30) {
+        final months = (days / 30).floor();
+        return '$months months';
+      } else {
+        return '$days days';
+      }
+    }
+    return 'Not specified';
+  }
 
   CourseModel copyWith({
     int? id,

@@ -124,4 +124,27 @@ class CourseRepository {
       rethrow;
     }
   }
+  
+  // Added missing methods
+  Future<List<CourseModel>> getAvailableCourses() async {
+    try {
+      final response = await _apiService.get('/courses/available');
+      
+      final List<dynamic> coursesData = response['data'];
+      return coursesData.map((json) => CourseModel.fromJson(json)).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  Future<List<dynamic>> getCourseMaterials(int courseId) async {
+    try {
+      final response = await _apiService.get('/courses/$courseId/materials');
+      
+      final List<dynamic> materialsData = response['data'];
+      return materialsData;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

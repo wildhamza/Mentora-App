@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/constants.dart';
 import '../../../core/routes.dart';
 import '../../../core/theme.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/course_provider.dart';
 import '../../../providers/assignment_provider.dart';
+import '../../../providers/attendance_provider.dart';
 import '../../common/loading_widget.dart';
 import '../../common/error_widget.dart';
 import 'package:intl/intl.dart';
@@ -20,45 +22,40 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   late final CourseProvider _courseProvider;
   late final AssignmentProvider _assignmentProvider;
   bool _isLoading = false;
-
+  
   @override
   void initState() {
     super.initState();
     _courseProvider = Provider.of<CourseProvider>(context, listen: false);
-    _assignmentProvider = Provider.of<AssignmentProvider>(
-      context,
-      listen: false,
-    );
+    _assignmentProvider = Provider.of<AssignmentProvider>(context, listen: false);
     _loadData();
   }
-
+  
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
-
+    
     await _courseProvider.fetchAssignedCourses();
-
+    
     if (_courseProvider.courses.isNotEmpty) {
-      await _assignmentProvider.fetchCourseAssignments(
-        _courseProvider.courses[0].id,
-      );
+      await _assignmentProvider.fetchCourseAssignments(_courseProvider.courses[0].id);
     }
-
+    
     setState(() {
       _isLoading = false;
     });
   }
-
+  
   Future<void> _refreshData() async {
     await _loadData();
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final courseProvider = Provider.of<CourseProvider>(context);
-
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Teacher Dashboard'),
@@ -75,59 +72,59 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         ],
       ),
       drawer: _buildDrawer(authProvider),
-      body:
-          _isLoading
-              ? const LoadingWidget(message: 'Loading dashboard...')
-              : RefreshIndicator(
-                onRefresh: _refreshData,
-                child:
-                    courseProvider.error != null
-                        ? AppErrorWidget(
-                          message: courseProvider.error!,
-                          onRetry: _refreshData,
-                        )
-                        : SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Welcome card
-                              _buildWelcomeCard(authProvider),
-
-                              const SizedBox(height: 24),
-
-                              // Stats overview
-                              _buildStatsOverview(courseProvider),
-
-                              const SizedBox(height: 24),
-
-                              // Quick actions
-                              _buildQuickActions(),
-
-                              const SizedBox(height: 24),
-
-                              // Upcoming activities
-                              _buildUpcomingActivities(),
-
-                              const SizedBox(height: 24),
-
-                              // My courses
-                              _buildMyCourses(courseProvider),
-                            ],
-                          ),
-                        ),
-              ),
+      body: _isLoading
+          ? const LoadingWidget(message: 'Loading dashboard...')
+          : RefreshIndicator(
+              onRefresh: _refreshData,
+              child: courseProvider.error != null
+                  ? AppErrorWidget(
+                      message: courseProvider.error!,
+                      onRetry: _refreshData,
+                    )
+                  : SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Welcome card
+                          _buildWelcomeCard(authProvider),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // Stats overview
+                          _buildStatsOverview(courseProvider),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // Quick actions
+                          _buildQuickActions(),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // Upcoming activities
+                          _buildUpcomingActivities(),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // My courses
+                          _buildMyCourses(courseProvider),
+                        ],
+                      ),
+                    ),
+            ),
     );
   }
-
+  
   Widget _buildDrawer(AuthProvider authProvider) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.primary),
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
@@ -136,8 +133,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   radius: 36,
                   backgroundColor: Colors.white,
                   child: Text(
-                    authProvider.user?.name.substring(0, 1).toUpperCase() ??
-                        'T',
+                    authProvider.user?.name.substring(0, 1).toUpperCase() ?? 'T',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -200,7 +196,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No courses assigned yet')),
+                  const SnackBar(
+                    content: Text('No courses assigned yet'),
+                  ),
                 );
               }
             },
@@ -217,7 +215,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No courses assigned yet')),
+                  const SnackBar(
+                    content: Text('No courses assigned yet'),
+                  ),
                 );
               }
             },
@@ -246,11 +246,11 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ),
     );
   }
-
+  
   Widget _buildWelcomeCard(AuthProvider authProvider) {
     final now = DateTime.now();
     String greeting;
-
+    
     if (now.hour < 12) {
       greeting = 'Good Morning';
     } else if (now.hour < 17) {
@@ -258,7 +258,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     } else {
       greeting = 'Good Evening';
     }
-
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -323,26 +323,20 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ),
     );
   }
-
+  
   Widget _buildStatsOverview(CourseProvider courseProvider) {
     final assignedCourses = courseProvider.courses.length;
-    final totalStudents = courseProvider.courses.fold<int>(
-      0,
-      (sum, course) => sum + course.enrolledCount,
-    );
-    final pendingAssignments =
-        _assignmentProvider.assignments
-            .where((a) => a.isSubmitted && !a.isEvaluated)
-            .length;
-
+    final totalStudents = courseProvider.courses.fold<int>(0, (sum, course) => sum + course.enrolledCount);
+    final pendingAssignments = _assignmentProvider.assignments.where((a) => a.isSubmitted && !a.isEvaluated).length;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Overview',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -391,7 +385,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ],
     );
   }
-
+  
   Widget _buildStatCard({
     required String title,
     required String value,
@@ -419,34 +413,38 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             children: [
               Text(
                 title,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-              Icon(icon, color: iconColor, size: 20),
+              Icon(
+                icon,
+                color: iconColor,
+                size: 20,
+              ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
     );
   }
-
+  
   Widget _buildQuickActions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Quick Actions',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         GridView.count(
@@ -469,7 +467,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No courses assigned yet')),
+                    const SnackBar(
+                      content: Text('No courses assigned yet'),
+                    ),
                   );
                 }
               },
@@ -494,7 +494,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No courses assigned yet')),
+                    const SnackBar(
+                      content: Text('No courses assigned yet'),
+                    ),
                   );
                 }
               },
@@ -512,7 +514,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ],
     );
   }
-
+  
   Widget _buildActionCard({
     required String title,
     required IconData icon,
@@ -545,14 +547,18 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -560,7 +566,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ),
     );
   }
-
+  
   Widget _buildUpcomingActivities() {
     // Mock data for upcoming activities
     final activities = [
@@ -583,7 +589,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         'datetime': DateTime.now().add(const Duration(hours: 5)),
       },
     ];
-
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -592,9 +598,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           children: [
             Text(
               'Upcoming Activities',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -645,7 +651,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ],
     );
   }
-
+  
   Widget _buildActivityCard(Map<String, dynamic> activity) {
     IconData getActivityIcon() {
       switch (activity['type']) {
@@ -659,7 +665,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           return Icons.event;
       }
     }
-
+    
     Color getActivityColor() {
       switch (activity['type']) {
         case 'assignment':
@@ -672,11 +678,11 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           return AppColors.secondary;
       }
     }
-
+    
     final now = DateTime.now();
     final activityDate = activity['datetime'] as DateTime;
     final difference = activityDate.difference(now);
-
+    
     String getTimeText() {
       if (difference.inDays > 0) {
         return 'In ${difference.inDays} days';
@@ -686,7 +692,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         return 'In ${difference.inMinutes} minutes';
       }
     }
-
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -709,7 +715,11 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               color: getActivityColor().withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(getActivityIcon(), color: getActivityColor(), size: 24),
+            child: Icon(
+              getActivityIcon(),
+              color: getActivityColor(),
+              size: 24,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -750,7 +760,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ),
     );
   }
-
+  
   Widget _buildMyCourses(CourseProvider courseProvider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -760,9 +770,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           children: [
             Text(
               'My Courses',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -784,7 +794,11 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             ),
             child: Column(
               children: [
-                Icon(Icons.school, size: 48, color: AppColors.textHint),
+                Icon(
+                  Icons.school,
+                  size: 48,
+                  color: AppColors.textHint,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'No courses assigned yet',
@@ -810,7 +824,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ],
     );
   }
-
+  
   Widget _buildCourseCard(course) {
     return Container(
       width: 300,
@@ -838,26 +852,24 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
               ),
-              image:
-                  course.thumbnail != null
-                      ? DecorationImage(
-                        image: NetworkImage(course.thumbnail!),
-                        fit: BoxFit.cover,
-                      )
-                      : null,
+              image: course.thumbnail != null
+                  ? DecorationImage(
+                      image: NetworkImage(course.thumbnail!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
             child: Center(
-              child:
-                  course.thumbnail == null
-                      ? Icon(
-                        Icons.menu_book,
-                        size: 48,
-                        color: AppColors.primary.withOpacity(0.5),
-                      )
-                      : null,
+              child: course.thumbnail == null
+                  ? Icon(
+                      Icons.menu_book,
+                      size: 48,
+                      color: AppColors.primary.withOpacity(0.5),
+                    )
+                  : null,
             ),
           ),
-
+          
           // Course details
           Padding(
             padding: const EdgeInsets.all(16),
@@ -889,22 +901,16 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color:
-                            course.isEnrollmentOpen
-                                ? AppColors.success
-                                : AppColors.textHint,
+                        color: course.isEnrollmentOpen ? AppColors.success : AppColors.textHint,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         course.isEnrollmentOpen ? 'Active' : 'Inactive',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],

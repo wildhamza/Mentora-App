@@ -27,6 +27,7 @@ class AssignmentModel extends Equatable {
     this.submissionAttachments,
     this.obtainedMarks,
     this.feedback,
+    this.courseName,
   });
 
   factory AssignmentModel.fromJson(Map<String, dynamic> json) {
@@ -49,6 +50,7 @@ class AssignmentModel extends Equatable {
           : null,
       obtainedMarks: json['obtained_marks']?.toDouble(),
       feedback: json['feedback'],
+      courseName: json['course_name'],
     );
   }
 
@@ -66,12 +68,26 @@ class AssignmentModel extends Equatable {
       'submission_attachments': submissionAttachments,
       'obtained_marks': obtainedMarks,
       'feedback': feedback,
+      'course_name': courseName,
     };
   }
 
   bool get isSubmitted => submissionDate != null;
   bool get isOverdue => DateTime.now().isAfter(dueDate) && !isSubmitted;
   bool get isEvaluated => obtainedMarks != null;
+  
+  // Aliases for UI compatibility
+  List<String>? get attachments => attachmentUrls;
+  double? get totalPoints => totalMarks;
+  
+  // For UI compatibility
+  final String? courseName;
+  
+  // Format due date as string
+  String get dueDateFormatted => "${dueDate.day}/${dueDate.month}/${dueDate.year}";
+  
+  // Convert due date to string for display
+  String get dueDate2 => dueDateFormatted;
 
   AssignmentModel copyWith({
     int? id,
@@ -86,6 +102,7 @@ class AssignmentModel extends Equatable {
     List<String>? submissionAttachments,
     double? obtainedMarks,
     String? feedback,
+    String? courseName,
   }) {
     return AssignmentModel(
       id: id ?? this.id,
@@ -100,6 +117,7 @@ class AssignmentModel extends Equatable {
       submissionAttachments: submissionAttachments ?? this.submissionAttachments,
       obtainedMarks: obtainedMarks ?? this.obtainedMarks,
       feedback: feedback ?? this.feedback,
+      courseName: courseName ?? this.courseName,
     );
   }
 
@@ -107,6 +125,6 @@ class AssignmentModel extends Equatable {
   List<Object?> get props => [
     id, courseId, title, description, dueDate, totalMarks,
     attachmentUrls, submissionDate, submissionContent,
-    submissionAttachments, obtainedMarks, feedback
+    submissionAttachments, obtainedMarks, feedback, courseName
   ];
 }

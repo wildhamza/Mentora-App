@@ -8,11 +8,13 @@ class AssignmentProvider extends ChangeNotifier {
   
   List<AssignmentModel> _assignments = [];
   AssignmentModel? _selectedAssignment;
+  AssignmentModel? _currentAssignment;
   bool _isLoading = false;
   String? _error;
   
   List<AssignmentModel> get assignments => _assignments;
   AssignmentModel? get selectedAssignment => _selectedAssignment;
+  AssignmentModel? get currentAssignment => _currentAssignment;
   bool get isLoading => _isLoading;
   String? get error => _error;
   
@@ -178,6 +180,54 @@ class AssignmentProvider extends ChangeNotifier {
       if (_selectedAssignment?.id == assignmentId) {
         _selectedAssignment = submittedAssignment;
       }
+      
+      setLoading(false);
+      return true;
+    } catch (e) {
+      setLoading(false);
+      setError(e.toString());
+      return false;
+    }
+  }
+  
+  // Methods required by UI
+  Future<bool> getAssignmentById(String assignmentId) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // In a real app, fetch from API
+      // Mock data for demo purposes
+      _currentAssignment = AssignmentModel(
+        id: int.parse(assignmentId),
+        courseId: 1,
+        title: 'Assignment ${assignmentId}',
+        description: 'This is a sample assignment description for assignment ${assignmentId}',
+        dueDate: DateTime.parse('2023-12-31'),
+        totalMarks: 100,
+        attachmentUrls: [],
+        courseName: 'Sample Course',
+      );
+      
+      // No need for external setting since courseName is now part of the constructor
+      
+      setLoading(false);
+      return true;
+    } catch (e) {
+      setLoading(false);
+      setError(e.toString());
+      return false;
+    }
+  }
+  
+  Future<bool> submitAssignmentAnswer(String assignmentId, String answerText) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // In a real app, send to API
+      // For demo purposes, simulate success
+      await Future.delayed(const Duration(seconds: 1));
       
       setLoading(false);
       return true;

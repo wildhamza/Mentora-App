@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../core/constants.dart';
 import '../../../core/theme.dart';
+import '../../../data/models/attendance_model.dart';
 import '../../../providers/attendance_provider.dart';
 import '../../../providers/course_provider.dart';
 import '../../common/loading_widget.dart';
@@ -11,20 +13,22 @@ import '../../common/app_button.dart';
 class AttendanceScreen extends StatefulWidget {
   final int courseId;
 
-  const AttendanceScreen({Key? key, required this.courseId}) : super(key: key);
+  const AttendanceScreen({
+    Key? key,
+    required this.courseId,
+  }) : super(key: key);
 
   @override
   State<AttendanceScreen> createState() => _AttendanceScreenState();
 }
 
-class _AttendanceScreenState extends State<AttendanceScreen>
-    with SingleTickerProviderStateMixin {
+class _AttendanceScreenState extends State<AttendanceScreen> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   late final AttendanceProvider _attendanceProvider;
   late final CourseProvider _courseProvider;
   bool _isLoading = false;
   DateTime _selectedDate = DateTime.now();
-
+  
   // Mock students data for marking attendance
   final List<Map<String, dynamic>> _mockStudents = [
     {'id': 1, 'name': 'Ali Hassan', 'isPresent': true},
@@ -43,10 +47,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _attendanceProvider = Provider.of<AttendanceProvider>(
-      context,
-      listen: false,
-    );
+    _attendanceProvider = Provider.of<AttendanceProvider>(context, listen: false);
     _courseProvider = Provider.of<CourseProvider>(context, listen: false);
     _studentsAttendance = List.from(_mockStudents);
     _loadData();
@@ -97,16 +98,11 @@ class _AttendanceScreenState extends State<AttendanceScreen>
       _isLoading = true;
     });
 
-    final attendance =
-        _studentsAttendance
-            .map(
-              (student) => {
-                'student_id': student['id'],
-                'student_name': student['name'],
-                'is_present': student['isPresent'],
-              },
-            )
-            .toList();
+    final attendance = _studentsAttendance.map((student) => {
+      'student_id': student['id'],
+      'student_name': student['name'],
+      'is_present': student['isPresent'],
+    }).toList();
 
     final success = await _attendanceProvider.markAttendance(
       widget.courseId,
@@ -132,9 +128,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            _attendanceProvider.error ?? 'Failed to mark attendance',
-          ),
+          content: Text(_attendanceProvider.error ?? 'Failed to mark attendance'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -164,19 +158,18 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           labelColor: Colors.white,
         ),
       ),
-      body:
-          _isLoading
-              ? const LoadingWidget(message: 'Loading attendance data...')
-              : TabBarView(
-                controller: _tabController,
-                children: [
-                  // Mark Attendance Tab
-                  _buildMarkAttendanceTab(),
+      body: _isLoading
+          ? const LoadingWidget(message: 'Loading attendance data...')
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                // Mark Attendance Tab
+                _buildMarkAttendanceTab(),
 
-                  // Attendance History Tab
-                  _buildAttendanceHistoryTab(),
-                ],
-              ),
+                // Attendance History Tab
+                _buildAttendanceHistoryTab(),
+              ],
+            ),
     );
   }
 
@@ -192,10 +185,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                 child: InkWell(
                   onTap: _selectDate,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -211,10 +201,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const Icon(
-                          Icons.calendar_today,
-                          color: AppColors.primary,
-                        ),
+                        const Icon(Icons.calendar_today, color: AppColors.primary),
                       ],
                     ),
                   ),
@@ -232,8 +219,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               Expanded(
                 child: _buildCountCard(
                   title: 'Present',
-                  count:
-                      _studentsAttendance.where((s) => s['isPresent']).length,
+                  count: _studentsAttendance.where((s) => s['isPresent']).length,
                   total: _studentsAttendance.length,
                   color: AppColors.success,
                   icon: Icons.check_circle,
@@ -243,8 +229,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               Expanded(
                 child: _buildCountCard(
                   title: 'Absent',
-                  count:
-                      _studentsAttendance.where((s) => !s['isPresent']).length,
+                  count: _studentsAttendance.where((s) => !s['isPresent']).length,
                   total: _studentsAttendance.length,
                   color: AppColors.error,
                   icon: Icons.cancel,
@@ -263,12 +248,18 @@ class _AttendanceScreenState extends State<AttendanceScreen>
             children: [
               Text(
                 'Students',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Spacer(),
               Text(
                 'Mark All:',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               SizedBox(width: 8),
               // Mark all buttons would go here
@@ -298,8 +289,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                   title: Text(student['name']),
                   trailing: Switch(
                     value: student['isPresent'],
-                    onChanged:
-                        (value) => _toggleStudentAttendance(index, value),
+                    onChanged: (value) => _toggleStudentAttendance(index, value),
                     activeColor: AppColors.success,
                     inactiveTrackColor: AppColors.error.withOpacity(0.5),
                   ),
@@ -342,13 +332,17 @@ class _AttendanceScreenState extends State<AttendanceScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.history, size: 64, color: AppColors.textHint),
+            Icon(
+              Icons.history,
+              size: 64,
+              color: AppColors.textHint,
+            ),
             const SizedBox(height: 16),
             Text(
               'No attendance records found',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
             ),
           ],
         ),
@@ -370,18 +364,16 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                 children: [
                   const Text(
                     'Overall Attendance Summary',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   LinearProgressIndicator(
-                    value:
-                        attendanceProvider.attendanceRecords.isEmpty
-                            ? 0
-                            : attendanceProvider
-                                    .attendanceRecords
-                                    .first
-                                    .attendancePercentage /
-                                100,
+                    value: attendanceProvider.attendanceRecords.isEmpty
+                        ? 0
+                        : attendanceProvider.attendanceRecords.first.attendancePercentage / 100,
                     backgroundColor: Colors.grey[300],
                     color: AppColors.success,
                     minHeight: 8,
@@ -400,7 +392,9 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                       ),
                       Text(
                         '${attendanceProvider.attendanceRecords.length} Classes',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -413,7 +407,10 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           if (attendanceProvider.attendanceSummary.isNotEmpty) ...[
             const Text(
               'Student Summary',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 16),
             ...attendanceProvider.attendanceSummary.map(
@@ -448,9 +445,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                             LinearProgressIndicator(
                               value: summary.attendancePercentage / 100,
                               backgroundColor: Colors.grey[300],
-                              color: _getAttendanceColor(
-                                summary.attendancePercentage,
-                              ),
+                              color: _getAttendanceColor(summary.attendancePercentage),
                               minHeight: 6,
                               borderRadius: BorderRadius.circular(3),
                             ),
@@ -462,9 +457,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                                   '${summary.attendancePercentage.toStringAsFixed(1)}%',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w500,
-                                    color: _getAttendanceColor(
-                                      summary.attendancePercentage,
-                                    ),
+                                    color: _getAttendanceColor(summary.attendancePercentage),
                                   ),
                                 ),
                                 Text(
@@ -491,7 +484,10 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           // Daily attendance records
           const Text(
             'Daily Records',
-            style: TextStyle(fontSize: .18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize:.18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           ...attendanceProvider.attendanceRecords.map(
@@ -500,11 +496,15 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               child: ExpansionTile(
                 title: Text(
                   DateFormat('MMMM dd, yyyy').format(record.date),
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 subtitle: Text(
                   'Present: ${record.presentCount}/${record.students.length} (${record.attendancePercentage.toStringAsFixed(1)}%)',
-                  style: TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 trailing: Icon(
                   Icons.chevron_right,
@@ -521,19 +521,13 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                         dense: true,
                         leading: Icon(
                           student.isPresent ? Icons.check_circle : Icons.cancel,
-                          color:
-                              student.isPresent
-                                  ? AppColors.success
-                                  : AppColors.error,
+                          color: student.isPresent ? AppColors.success : AppColors.error,
                         ),
                         title: Text(student.studentName),
                         trailing: Text(
                           student.isPresent ? 'Present' : 'Absent',
                           style: TextStyle(
-                            color:
-                                student.isPresent
-                                    ? AppColors.success
-                                    : AppColors.error,
+                            color: student.isPresent ? AppColors.success : AppColors.error,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -577,7 +571,10 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               const SizedBox(width: 8),
               Text(
                 title,
-                style: TextStyle(fontWeight: FontWeight.bold, color: color),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
             ],
           ),
@@ -592,7 +589,9 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           ),
           Text(
             'out of $total',
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

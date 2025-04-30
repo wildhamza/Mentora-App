@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/constants.dart';
 import '../../../core/routes.dart';
 import '../../../core/theme.dart';
 import '../../../providers/auth_provider.dart';
@@ -16,27 +17,27 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   late final CourseProvider _courseProvider;
-
+  
   @override
   void initState() {
     super.initState();
     _courseProvider = Provider.of<CourseProvider>(context, listen: false);
     _loadData();
   }
-
+  
   Future<void> _loadData() async {
     await _courseProvider.fetchAllCourses();
   }
-
+  
   Future<void> _refreshData() async {
     await _loadData();
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final courseProvider = Provider.of<CourseProvider>(context);
-
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
@@ -54,40 +55,39 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        child:
-            courseProvider.isLoading
-                ? const LoadingWidget(message: 'Loading dashboard...')
-                : courseProvider.error != null
+        child: courseProvider.isLoading
+            ? const LoadingWidget(message: 'Loading dashboard...')
+            : courseProvider.error != null
                 ? AppErrorWidget(
-                  message: courseProvider.error!,
-                  onRetry: _refreshData,
-                )
+                    message: courseProvider.error!,
+                    onRetry: _refreshData,
+                  )
                 : SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Welcome section
-                      _buildWelcomeSection(authProvider),
-
-                      const SizedBox(height: 24),
-
-                      // Stats cards
-                      _buildStatsSection(courseProvider),
-
-                      const SizedBox(height: 24),
-
-                      // Actions section
-                      _buildActionsSection(),
-
-                      const SizedBox(height: 24),
-
-                      // Recent courses section
-                      _buildRecentCoursesSection(courseProvider),
-                    ],
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Welcome section
+                        _buildWelcomeSection(authProvider),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Stats cards
+                        _buildStatsSection(courseProvider),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Actions section
+                        _buildActionsSection(),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Recent courses section
+                        _buildRecentCoursesSection(courseProvider),
+                      ],
+                    ),
                   ),
-                ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -99,7 +99,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-
+  
   Widget _buildWelcomeSection(AuthProvider authProvider) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -159,28 +159,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-
+  
   Widget _buildStatsSection(CourseProvider courseProvider) {
     final totalCourses = courseProvider.courses.length;
-    final activeCourses =
-        courseProvider.courses
-            .where((course) => course.isEnrollmentOpen)
-            .length;
-    final totalInstructors =
-        courseProvider.courses
-            .map((course) => course.instructorId)
-            .where((id) => id != null)
-            .toSet()
-            .length;
-
+    final activeCourses = courseProvider.courses.where((course) => course.isEnrollmentOpen).length;
+    final totalInstructors = courseProvider.courses
+        .map((course) => course.instructorId)
+        .where((id) => id != null)
+        .toSet()
+        .length;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Overview',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -219,10 +215,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Expanded(
               child: _buildStatCard(
                 title: 'Enrollment Rate',
-                value:
-                    totalCourses > 0
-                        ? '${((courseProvider.courses.fold<int>(0, (sum, course) => sum + course.enrolledCount) / courseProvider.courses.fold<int>(0, (sum, course) => sum + course.capacity)) * 100).toStringAsFixed(1)}%'
-                        : '0%',
+                value: totalCourses > 0
+                    ? '${((courseProvider.courses.fold<int>(0, (sum, course) => sum + course.enrolledCount) / 
+                        courseProvider.courses.fold<int>(0, (sum, course) => sum + course.capacity)) * 100).toStringAsFixed(1)}%'
+                    : '0%',
                 icon: Icons.trending_up,
                 iconColor: AppColors.info,
               ),
@@ -232,7 +228,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ],
     );
   }
-
+  
   Widget _buildStatCard({
     required String title,
     required String value,
@@ -260,34 +256,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
             children: [
               Text(
                 title,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-              Icon(icon, color: iconColor, size: 20),
+              Icon(
+                icon,
+                color: iconColor,
+                size: 20,
+              ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
     );
   }
-
+  
   Widget _buildActionsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Quick Actions',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -351,7 +351,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ],
     );
   }
-
+  
   Widget _buildActionCard({
     required String title,
     required IconData icon,
@@ -383,14 +383,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -398,10 +402,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-
+  
   Widget _buildRecentCoursesSection(CourseProvider courseProvider) {
     final recentCourses = courseProvider.courses.take(3).toList();
-
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -410,9 +414,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             Text(
               'Recent Courses',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -435,7 +439,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.menu_book, size: 48, color: AppColors.textHint),
+                  Icon(
+                    Icons.menu_book,
+                    size: 48,
+                    color: AppColors.textHint,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No courses created yet',
@@ -469,7 +477,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ],
     );
   }
-
+  
   Widget _buildCourseListItem(course) {
     return Container(
       decoration: BoxDecoration(
@@ -493,22 +501,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Center(
-            child: Icon(Icons.menu_book, color: AppColors.primary),
+            child: Icon(
+              Icons.menu_book,
+              color: AppColors.primary,
+            ),
           ),
         ),
         title: Text(
           course.title,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           '${course.enrolledCount}/${course.capacity} students enrolled',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -520,66 +531,64 @@ class _AdminDashboardState extends State<AdminDashboard> {
           },
         ),
         onTap: () {
-          Navigator.of(
-            context,
-          ).pushNamed(Routes.addEditCourse, arguments: {'courseId': course.id});
+          Navigator.of(context).pushNamed(
+            Routes.addEditCourse,
+            arguments: {'courseId': course.id},
+          );
         },
       ),
     );
   }
-
+  
   void _showCourseSelectionDialog() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Select Course'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: Consumer<CourseProvider>(
-                builder: (context, courseProvider, child) {
-                  if (courseProvider.courses.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('No courses available'),
-                    );
-                  }
-
-                  return ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: courseProvider.courses.length,
-                    separatorBuilder: (context, index) => const Divider(),
-                    itemBuilder: (context, index) {
-                      final course = courseProvider.courses[index];
-                      return ListTile(
-                        title: Text(course.title),
-                        subtitle: Text(
-                          course.hasInstructor
-                              ? 'Instructor: ${course.instructorName}'
-                              : 'No instructor assigned',
-                        ),
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          Navigator.of(context).pushNamed(
-                            Routes.assignInstructor,
-                            arguments: {'courseId': course.id},
-                          );
-                        },
+      builder: (context) => AlertDialog(
+        title: const Text('Select Course'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Consumer<CourseProvider>(
+            builder: (context, courseProvider, child) {
+              if (courseProvider.courses.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('No courses available'),
+                );
+              }
+              
+              return ListView.separated(
+                shrinkWrap: true,
+                itemCount: courseProvider.courses.length,
+                separatorBuilder: (context, index) => const Divider(),
+                itemBuilder: (context, index) {
+                  final course = courseProvider.courses[index];
+                  return ListTile(
+                    title: Text(course.title),
+                    subtitle: Text(course.hasInstructor 
+                      ? 'Instructor: ${course.instructorName}' 
+                      : 'No instructor assigned'),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pushNamed(
+                        Routes.assignInstructor,
+                        arguments: {'courseId': course.id},
                       );
                     },
                   );
                 },
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Cancel'),
-              ),
-            ],
+              );
+            },
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
     );
   }
 }

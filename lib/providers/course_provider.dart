@@ -7,12 +7,20 @@ class CourseProvider extends ChangeNotifier {
   final CourseRepository _courseRepository = CourseRepository(apiService: ApiService());
   
   List<CourseModel> _courses = [];
+  List<CourseModel> _enrolledCourses = [];
+  List<CourseModel> _availableCourses = [];
   CourseModel? _selectedCourse;
+  CourseModel? _currentCourse;
+  List<dynamic> _courseMaterials = [];
   bool _isLoading = false;
   String? _error;
   
   List<CourseModel> get courses => _courses;
+  List<CourseModel> get enrolledCourses => _enrolledCourses;
+  List<CourseModel> get availableCourses => _availableCourses;
   CourseModel? get selectedCourse => _selectedCourse;
+  CourseModel? get currentCourse => _currentCourse;
+  List<dynamic> get courseMaterials => _courseMaterials;
   bool get isLoading => _isLoading;
   String? get error => _error;
   
@@ -209,6 +217,66 @@ class CourseProvider extends ChangeNotifier {
     }
   }
   
+  Future<bool> getEnrolledCourses() async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      _enrolledCourses = await _courseRepository.getEnrolledCourses();
+      setLoading(false);
+      return true;
+    } catch (e) {
+      setLoading(false);
+      setError(e.toString());
+      return false;
+    }
+  }
+  
+  Future<bool> getAvailableCourses() async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      _availableCourses = await _courseRepository.getAvailableCourses();
+      setLoading(false);
+      return true;
+    } catch (e) {
+      setLoading(false);
+      setError(e.toString());
+      return false;
+    }
+  }
+  
+  Future<bool> getCourseById(String courseId) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      _currentCourse = await _courseRepository.getCourseById(int.parse(courseId));
+      setLoading(false);
+      return true;
+    } catch (e) {
+      setLoading(false);
+      setError(e.toString());
+      return false;
+    }
+  }
+  
+  Future<bool> getCourseMaterials(String courseId) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      _courseMaterials = await _courseRepository.getCourseMaterials(int.parse(courseId));
+      setLoading(false);
+      return true;
+    } catch (e) {
+      setLoading(false);
+      setError(e.toString());
+      return false;
+    }
+  }
+  
   Future<bool> enrollInCourse(int courseId, String paymentIntentId) async {
     setLoading(true);
     setError(null);
@@ -230,12 +298,52 @@ class CourseProvider extends ChangeNotifier {
     }
   }
   
+  Future<bool> enrollCourseWithPayment(String courseId, Map<String, dynamic> paymentData) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // In a real implementation, this would process payment data via a payment processor
+      // For now, we're just simulating with a fake payment intent
+      final paymentIntentId = "pi_${DateTime.now().millisecondsSinceEpoch}";
+      
+      final result = await _courseRepository.enrollInCourse(int.parse(courseId), paymentIntentId);
+      
+      if (result) {
+        // Refresh the course list after enrollment
+        await getEnrolledCourses();
+      }
+      
+      setLoading(false);
+      return result;
+    } catch (e) {
+      setLoading(false);
+      setError(e.toString());
+      return false;
+    }
+  }
+  
   Future<bool> joinWaitlist(int courseId) async {
     setLoading(true);
     setError(null);
     
     try {
       final result = await _courseRepository.joinWaitlist(courseId);
+      setLoading(false);
+      return result;
+    } catch (e) {
+      setLoading(false);
+      setError(e.toString());
+      return false;
+    }
+  }
+  
+  Future<bool> joinCourseWaitlist(String courseId) async {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      final result = await _courseRepository.joinWaitlist(int.parse(courseId));
       setLoading(false);
       return result;
     } catch (e) {

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/routes.dart';
+import '../../../core/constants.dart';
 import '../../../core/theme.dart';
 import '../../../providers/course_provider.dart';
-import '../../common/loading_widget.dart';
-import '../../common/error_widget.dart';
-import '../../common/course_card.dart';
+import '../../common/app_button.dart';
 
 class CourseBrowseScreen extends StatefulWidget {
   const CourseBrowseScreen({Key? key}) : super(key: key);
@@ -15,363 +13,241 @@ class CourseBrowseScreen extends StatefulWidget {
 }
 
 class _CourseBrowseScreenState extends State<CourseBrowseScreen> {
-  late final CourseProvider _courseProvider;
-  bool _isLoading = false;
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  final List<String> _selectedCategories = [];
-  RangeValues _priceRange = const RangeValues(0, 10000);
 
   @override
   void initState() {
     super.initState();
-    _courseProvider = Provider.of<CourseProvider>(context, listen: false);
-    _loadCourses();
-  }
-
-  Future<void> _loadCourses() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Fetch all available courses (that have enrollment open)
-    await _courseProvider.fetchAllCourses(filters: {'enrollment_open': true});
-
-    setState(() {
-      _isLoading = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Load available courses
+      Provider.of<CourseProvider>(context, listen: false).getAvailableCourses();
     });
   }
 
-  Future<void> _refreshCourses() async {
-    return _loadCourses();
-  }
-
-  List<dynamic> _getFilteredCourses() {
-    return _courseProvider.courses.where((course) {
-      // Apply search filter
-      if (_searchQuery.isNotEmpty) {
-        final query = _searchQuery.toLowerCase();
-        final title = course.title.toLowerCase();
-        final description = course.description.toLowerCase();
-        final instructorName = (course.instructorName ?? '').toLowerCase();
-
-        if (!title.contains(query) &&
-            !description.contains(query) &&
-            !instructorName.contains(query)) {
-          return false;
-        }
-      }
-
-      // Apply price filter
-      if (course.fees < _priceRange.start || course.fees > _priceRange.end) {
-        return false;
-      }
-
-      // Apply category filter (mock categories for demonstration)
-      if (_selectedCategories.isNotEmpty) {
-        // In a real app, courses would have categories
-        // Here we're just filtering based on an imaginary category assignment
-        final mockCategories = [
-          'Programming',
-          'Mathematics',
-          'Science',
-          'Language',
-          'Arts',
-        ];
-
-        final courseIndex = course.id % mockCategories.length;
-        final courseCategory = mockCategories[courseIndex];
-
-        if (!_selectedCategories.contains(courseCategory)) {
-          return false;
-        }
-      }
-
-      return true;
-    }).toList();
-  }
-
-  void _showFilterDialog() {
-    // Mock categories for demonstration
-    final categories = [
-      'Programming',
-      'Mathematics',
-      'Science',
-      'Language',
-      'Arts',
-    ];
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Filter Courses'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Price Range',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    RangeSlider(
-                      values: _priceRange,
-                      min: 0,
-                      max: 10000,
-                      divisions: 20,
-                      labels: RangeLabels(
-                        'Rs. ${_priceRange.start.round()}',
-                        'Rs. ${_priceRange.end.round()}',
-                      ),
-                      onChanged: (RangeValues values) {
-                        setState(() {
-                          _priceRange = values;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Categories',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children:
-                          categories.map((category) {
-                            final isSelected = _selectedCategories.contains(
-                              category,
-                            );
-                            return FilterChip(
-                              label: Text(category),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    _selectedCategories.add(category);
-                                  } else {
-                                    _selectedCategories.remove(category);
-                                  }
-                                });
-                              },
-                              backgroundColor: Colors.white,
-                              selectedColor: AppColors.primary.withOpacity(0.1),
-                              checkmarkColor: AppColors.primary,
-                            );
-                          }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    // Reset filters
-                    this.setState(() {
-                      _selectedCategories.clear();
-                      _priceRange = const RangeValues(0, 10000);
-                    });
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Reset'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    this.setState(() {});
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Apply'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final courseProvider = Provider.of<CourseProvider>(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Browse Courses'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
-          ),
-        ],
       ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search courses',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
-          ),
-
-          // Filter chips
-          if (_selectedCategories.isNotEmpty ||
-              _priceRange != const RangeValues(0, 10000))
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const Text(
-                    'Active Filters:',
-                    style: TextStyle(fontWeight: FontWeight.w500),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Search bar
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search courses...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 8),
-                  if (_priceRange != const RangeValues(0, 10000))
-                    Chip(
-                      label: Text(
-                        'Rs. ${_priceRange.start.round()} - ${_priceRange.end.round()}',
-                      ),
-                      onDeleted: () {
-                        setState(() {
-                          _priceRange = const RangeValues(0, 10000);
-                        });
-                      },
-                    ),
-                  const SizedBox(width: 4),
-                  if (_selectedCategories.isNotEmpty)
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children:
-                              _selectedCategories.map((category) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 4),
-                                  child: Chip(
-                                    label: Text(category),
-                                    onDeleted: () {
-                                      setState(() {
-                                        _selectedCategories.remove(category);
-                                      });
-                                    },
-                                  ),
-                                );
-                              }).toList(),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
               ),
-            ),
-
-          // Course list
-          Expanded(
-            child:
-                _isLoading
-                    ? const LoadingWidget(message: 'Loading courses...')
-                    : Consumer<CourseProvider>(
-                      builder: (context, courseProvider, child) {
-                        if (courseProvider.error != null) {
-                          return AppErrorWidget(
-                            message: courseProvider.error!,
-                            onRetry: _refreshCourses,
-                          );
-                        }
-
-                        final filteredCourses = _getFilteredCourses();
-
-                        if (filteredCourses.isEmpty) {
-                          return Center(
+              
+              const SizedBox(height: 24),
+              
+              // Filter chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip('All', true),
+                    _buildFilterChip('Popular', false),
+                    _buildFilterChip('New', false),
+                    _buildFilterChip('Computer Science', false),
+                    _buildFilterChip('Mathematics', false),
+                    _buildFilterChip('English', false),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Available courses
+              Text(
+                'Available Courses',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Course list
+              Expanded(
+                child: courseProvider.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : courseProvider.availableCourses.isEmpty
+                        ? Center(
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.search_off,
+                                const Icon(
+                                  Icons.school_outlined,
                                   size: 64,
-                                  color: AppColors.textHint,
+                                  color: AppColors.textSecondary,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'No courses match your filters',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium?.copyWith(
+                                  'No courses available at the moment',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: AppColors.textSecondary,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                TextButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      _searchQuery = '';
-                                      _selectedCategories.clear();
-                                      _priceRange = const RangeValues(0, 10000);
-                                    });
-                                  },
-                                  icon: const Icon(Icons.filter_alt_off),
-                                  label: const Text('Clear Filters'),
-                                ),
                               ],
                             ),
-                          );
-                        }
-
-                        return RefreshIndicator(
-                          onRefresh: _refreshCourses,
-                          child: GridView.builder(
-                            padding: const EdgeInsets.all(16),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 1,
-                                  childAspectRatio: 1.3,
-                                  mainAxisSpacing: 16,
-                                ),
-                            itemCount: filteredCourses.length,
+                          )
+                        : ListView.builder(
+                            itemCount: courseProvider.availableCourses.length,
                             itemBuilder: (context, index) {
-                              final course = filteredCourses[index];
-                              return CourseCard(
-                                course: course,
-                                showEnrollButton: true,
-                                onTap: () {
-                                  // View course details
-                                },
-                                onEnrollTap: () {
-                                  Navigator.of(context).pushNamed(
-                                    Routes.payment,
-                                    arguments: {'courseId': course.id},
-                                  );
-                                },
-                              );
+                              final course = courseProvider.availableCourses[index];
+                              // Filter by search query if needed
+                              if (_searchQuery.isNotEmpty &&
+                                  !(course.title?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)) {
+                                return const SizedBox.shrink();
+                              }
+                              return _buildCourseCard(context, course);
                             },
                           ),
-                        );
-                      },
-                    ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, bool isSelected) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (value) {
+          // Apply filter logic
+        },
+        backgroundColor: Colors.white,
+        selectedColor: AppColors.primaryLight,
+        checkmarkColor: AppColors.primary,
+      ),
+    );
+  }
+
+  Widget _buildCourseCard(BuildContext context, dynamic course) {
+    // This should use the actual Course model
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              course.title ?? 'Course Name',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              course.description ?? 'Course description goes here',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                // Course details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailRow(
+                        context, 
+                        icon: Icons.person,
+                        text: 'Instructor: ${course.instructorName ?? 'TBD'}',
+                      ),
+                      const SizedBox(height: 4),
+                      _buildDetailRow(
+                        context, 
+                        icon: Icons.calendar_today,
+                        text: 'Duration: ${course.duration ?? '8 weeks'}',
+                      ),
+                      const SizedBox(height: 4),
+                      _buildDetailRow(
+                        context, 
+                        icon: Icons.attach_money,
+                        text: 'Fee: Rs. ${course.fee?.toString() ?? '5000'}',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Enroll button
+                AppButton(
+                  text: 'Enroll Now',
+                  type: ButtonType.primary,
+                  onPressed: () {
+                    // Navigate to payment screen
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: AppColors.textSecondary,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
     );
   }
 }

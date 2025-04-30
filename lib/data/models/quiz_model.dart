@@ -145,6 +145,9 @@ class QuestionModel extends Equatable {
 
   bool get isAnswered => selectedOptionIndex != null;
   bool get isCorrect => selectedOptionIndex == correctOptionIndex;
+  
+  // Alias for compatibility with UI
+  String get text => question;
 
   QuestionModel copyWith({
     int? id,
