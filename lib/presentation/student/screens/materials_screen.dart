@@ -6,7 +6,7 @@ import '../../common/app_button.dart';
 
 class MaterialsScreen extends StatefulWidget {
   final String courseId;
-  
+
   const MaterialsScreen({
     Key? key,
     required this.courseId,
@@ -16,32 +16,34 @@ class MaterialsScreen extends StatefulWidget {
   State<MaterialsScreen> createState() => _MaterialsScreenState();
 }
 
-class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProviderStateMixin {
+class _MaterialsScreenState extends State<MaterialsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Load course materials
-      Provider.of<CourseProvider>(context, listen: false).getCourseMaterials(widget.courseId);
+      Provider.of<CourseProvider>(context, listen: false)
+          .getCourseMaterials(widget.courseId);
     });
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final courseProvider = Provider.of<CourseProvider>(context);
     final course = courseProvider.currentCourse;
     final isLoading = courseProvider.isLoading;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(course?.title ?? 'Course Materials'),
@@ -62,30 +64,32 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
               children: [
                 // Documents tab
                 _buildDocumentsTab(context, courseProvider),
-                
+
                 // Videos tab
                 _buildVideosTab(context, courseProvider),
-                
+
                 // Downloads tab
                 _buildDownloadsTab(context, courseProvider),
               ],
             ),
     );
   }
-  
-  Widget _buildDocumentsTab(BuildContext context, CourseProvider courseProvider) {
+
+  Widget _buildDocumentsTab(
+      BuildContext context, CourseProvider courseProvider) {
     final documents = courseProvider.courseMaterials
-        ?.where((material) => material.type == 'document' || material.type == 'pdf')
+        .where(
+            (material) => material.type == 'document' || material.type == 'pdf')
         .toList();
-    
-    if (documents == null || documents.isEmpty) {
+
+    if (documents.isEmpty) {
       return _buildEmptyState(
         context,
         icon: Icons.description,
         message: 'No documents available for this course',
       );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: documents.length,
@@ -108,20 +112,20 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
       },
     );
   }
-  
+
   Widget _buildVideosTab(BuildContext context, CourseProvider courseProvider) {
     final videos = courseProvider.courseMaterials
-        ?.where((material) => material.type == 'video')
+        .where((material) => material.type == 'video')
         .toList();
-    
-    if (videos == null || videos.isEmpty) {
+
+    if (videos.isEmpty) {
       return _buildEmptyState(
         context,
         icon: Icons.videocam,
         message: 'No videos available for this course',
       );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: videos.length,
@@ -140,20 +144,22 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
       },
     );
   }
-  
-  Widget _buildDownloadsTab(BuildContext context, CourseProvider courseProvider) {
+
+  Widget _buildDownloadsTab(
+      BuildContext context, CourseProvider courseProvider) {
     final downloads = courseProvider.courseMaterials
-        ?.where((material) => material.type == 'other' || material.type == 'archive')
+        .where((material) =>
+            material.type == 'other' || material.type == 'archive')
         .toList();
-    
-    if (downloads == null || downloads.isEmpty) {
+
+    if (downloads.isEmpty) {
       return _buildEmptyState(
         context,
         icon: Icons.download,
         message: 'No downloadable materials available',
       );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: downloads.length,
@@ -174,7 +180,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
       },
     );
   }
-  
+
   Widget _buildEmptyState(
     BuildContext context, {
     required IconData icon,
@@ -193,15 +199,15 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
           Text(
             message,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+                  color: AppColors.textSecondary,
+                ),
             textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildMaterialCard(
     BuildContext context, {
     required String title,
@@ -244,16 +250,17 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
                     children: [
                       Text(
                         title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Uploaded on $date · $fileSize',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                              color: AppColors.textSecondary,
+                            ),
                       ),
                     ],
                   ),
@@ -293,7 +300,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
       ),
     );
   }
-  
+
   Widget _buildVideoCard(
     BuildContext context, {
     required String title,
@@ -314,7 +321,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
                 child: thumbnail != null
                     ? Image.network(
                         thumbnail,
@@ -345,7 +353,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
                         ),
                       ),
               ),
-              
+
               // Play button
               Positioned.fill(
                 child: Center(
@@ -367,13 +375,14 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
                   ),
                 ),
               ),
-              
+
               // Duration badge
               Positioned(
                 right: 8,
                 bottom: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(4),
@@ -390,7 +399,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
               ),
             ],
           ),
-          
+
           // Video details
           Padding(
             padding: const EdgeInsets.all(16),
@@ -400,8 +409,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> with SingleTickerProv
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(

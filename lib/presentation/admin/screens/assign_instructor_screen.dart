@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants.dart';
 import '../../../core/theme.dart';
 import '../../../providers/course_provider.dart';
 import '../../common/loading_widget.dart';
@@ -9,7 +8,7 @@ import '../../common/app_button.dart';
 
 class AssignInstructorScreen extends StatefulWidget {
   final int courseId;
-  
+
   const AssignInstructorScreen({
     Key? key,
     required this.courseId,
@@ -24,49 +23,64 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
   bool _isLoading = false;
   String? _searchQuery;
   int? _selectedInstructorId;
-  
+
   // Mock data for instructors
   final List<Map<String, dynamic>> _instructors = [
     {'id': 1, 'name': 'Dr. Ahmed Khan', 'subject': 'Mathematics', 'courses': 2},
-    {'id': 2, 'name': 'Prof. Sara Ali', 'subject': 'Computer Science', 'courses': 1},
+    {
+      'id': 2,
+      'name': 'Prof. Sara Ali',
+      'subject': 'Computer Science',
+      'courses': 1
+    },
     {'id': 3, 'name': 'Dr. Hamza Malik', 'subject': 'Physics', 'courses': 3},
-    {'id': 4, 'name': 'Prof. Aisha Jabeen', 'subject': 'English Literature', 'courses': 0},
+    {
+      'id': 4,
+      'name': 'Prof. Aisha Jabeen',
+      'subject': 'English Literature',
+      'courses': 0
+    },
     {'id': 5, 'name': 'Dr. Farooq Ahmed', 'subject': 'Chemistry', 'courses': 1},
-    {'id': 6, 'name': 'Prof. Zainab Fatima', 'subject': 'History', 'courses': 2},
+    {
+      'id': 6,
+      'name': 'Prof. Zainab Fatima',
+      'subject': 'History',
+      'courses': 2
+    },
     {'id': 7, 'name': 'Dr. Umar Khalid', 'subject': 'Biology', 'courses': 1},
   ];
-  
+
   @override
   void initState() {
     super.initState();
     _courseProvider = Provider.of<CourseProvider>(context, listen: false);
     _loadCourseData();
   }
-  
+
   Future<void> _loadCourseData() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     await _courseProvider.fetchCourseById(widget.courseId);
-    
+
     final course = _courseProvider.selectedCourse;
     if (course != null && course.instructorId != null) {
       setState(() {
         _selectedInstructorId = course.instructorId;
       });
     }
-    
+
     setState(() {
       _isLoading = false;
     });
   }
-  
+
   List<Map<String, dynamic>> _getFilteredInstructors() {
     if (_searchQuery == null || _searchQuery!.isEmpty) {
       return _instructors;
     }
-    
+
     final query = _searchQuery!.toLowerCase();
     return _instructors.where((instructor) {
       final name = instructor['name'].toString().toLowerCase();
@@ -74,7 +88,7 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
       return name.contains(query) || subject.contains(query);
     }).toList();
   }
-  
+
   Future<void> _assignInstructor() async {
     if (_selectedInstructorId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,22 +99,22 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
       );
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     final success = await _courseProvider.assignInstructor(
       widget.courseId,
       _selectedInstructorId!,
     );
-    
+
     setState(() {
       _isLoading = false;
     });
-    
+
     if (!mounted) return;
-    
+
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -112,7 +126,8 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_courseProvider.error ?? 'Failed to assign instructor. Please try again.'),
+          content: Text(_courseProvider.error ??
+              'Failed to assign instructor. Please try again.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -155,9 +170,12 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
                           children: [
                             Text(
                               'Course Information',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
                             const Divider(),
                             const SizedBox(height: 8),
@@ -168,18 +186,21 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
                             const SizedBox(height: 8),
                             _buildCourseInfoRow(
                               label: 'Current Instructor',
-                              value: _courseProvider.selectedCourse!.instructorName ?? 'None',
+                              value: _courseProvider
+                                      .selectedCourse!.instructorName ??
+                                  'None',
                             ),
                             const SizedBox(height: 8),
                             _buildCourseInfoRow(
                               label: 'Students',
-                              value: '${_courseProvider.selectedCourse!.enrolledCount}/${_courseProvider.selectedCourse!.capacity}',
+                              value:
+                                  '${_courseProvider.selectedCourse!.enrolledCount}/${_courseProvider.selectedCourse!.capacity}',
                             ),
                           ],
                         ),
                       ),
                     ),
-                    
+
                     // Search bar
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -190,7 +211,8 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 12),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -199,9 +221,9 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
                         },
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Instructors list
                     Expanded(
                       child: ListView.builder(
@@ -209,14 +231,17 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
                         itemCount: _getFilteredInstructors().length,
                         itemBuilder: (context, index) {
                           final instructor = _getFilteredInstructors()[index];
-                          final isSelected = _selectedInstructorId == instructor['id'];
-                          
+                          final isSelected =
+                              _selectedInstructorId == instructor['id'];
+
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide(
-                                color: isSelected ? AppColors.primary : Colors.transparent,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : Colors.transparent,
                                 width: isSelected ? 2 : 0,
                               ),
                             ),
@@ -235,11 +260,16 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
                                       radius: 24,
                                       backgroundColor: isSelected
                                           ? AppColors.primary
-                                          : AppColors.secondary.withOpacity(0.1),
+                                          : AppColors.secondary
+                                              .withOpacity(0.1),
                                       child: Text(
-                                        instructor['name'].toString().substring(0, 1),
+                                        instructor['name']
+                                            .toString()
+                                            .substring(0, 1),
                                         style: TextStyle(
-                                          color: isSelected ? Colors.white : AppColors.secondary,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : AppColors.secondary,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -247,27 +277,39 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             instructor['name'],
-                                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             instructor['subject'],
-                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                              color: AppColors.textSecondary,
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             '${instructor['courses']} active courses',
-                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              color: AppColors.textSecondary,
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -290,7 +332,7 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
                         },
                       ),
                     ),
-                    
+
                     // Assign button
                     Padding(
                       padding: const EdgeInsets.all(16),
@@ -305,7 +347,7 @@ class _AssignInstructorScreenState extends State<AssignInstructorScreen> {
                 ),
     );
   }
-  
+
   Widget _buildCourseInfoRow({
     required String label,
     required String value,

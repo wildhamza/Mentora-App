@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants.dart';
 import '../../../core/theme.dart';
 import '../../../data/models/assignment_model.dart';
 import '../../../providers/assignment_provider.dart';
@@ -15,10 +14,12 @@ class AssignmentManagementScreen extends StatefulWidget {
   const AssignmentManagementScreen({Key? key}) : super(key: key);
 
   @override
-  State<AssignmentManagementScreen> createState() => _AssignmentManagementScreenState();
+  State<AssignmentManagementScreen> createState() =>
+      _AssignmentManagementScreenState();
 }
 
-class _AssignmentManagementScreenState extends State<AssignmentManagementScreen> with SingleTickerProviderStateMixin {
+class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   late final CourseProvider _courseProvider;
   late final AssignmentProvider _assignmentProvider;
@@ -30,7 +31,8 @@ class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _courseProvider = Provider.of<CourseProvider>(context, listen: false);
-    _assignmentProvider = Provider.of<AssignmentProvider>(context, listen: false);
+    _assignmentProvider =
+        Provider.of<AssignmentProvider>(context, listen: false);
     _loadData();
   }
 
@@ -98,7 +100,8 @@ class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Assignment'),
-          content: Text('Are you sure you want to delete "${assignment.title}"?'),
+          content:
+              Text('Are you sure you want to delete "${assignment.title}"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -107,7 +110,8 @@ class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                final success = await _assignmentProvider.deleteAssignment(assignment.id);
+                final success =
+                    await _assignmentProvider.deleteAssignment(assignment.id);
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -119,13 +123,15 @@ class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(_assignmentProvider.error ?? 'Failed to delete assignment'),
+                      content: Text(_assignmentProvider.error ??
+                          'Failed to delete assignment'),
                       backgroundColor: AppColors.error,
                     ),
                   );
                 }
               },
-              child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+              child: const Text('Delete',
+                  style: TextStyle(color: AppColors.error)),
             ),
           ],
         );
@@ -134,15 +140,21 @@ class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
   }
 
   List<AssignmentModel> _getPendingAssignments() {
-    return _assignmentProvider.assignments.where((a) => a.isSubmitted && !a.isEvaluated).toList();
+    return _assignmentProvider.assignments
+        .where((a) => a.isSubmitted && !a.isEvaluated)
+        .toList();
   }
 
   List<AssignmentModel> _getActiveAssignments() {
-    return _assignmentProvider.assignments.where((a) => !a.isSubmitted && !a.isOverdue).toList();
+    return _assignmentProvider.assignments
+        .where((a) => !a.isSubmitted && !a.isOverdue)
+        .toList();
   }
 
   List<AssignmentModel> _getPastAssignments() {
-    return _assignmentProvider.assignments.where((a) => a.isSubmitted && a.isEvaluated || a.isOverdue).toList();
+    return _assignmentProvider.assignments
+        .where((a) => a.isSubmitted && a.isEvaluated || a.isOverdue)
+        .toList();
   }
 
   @override
@@ -211,7 +223,10 @@ class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
                               const SizedBox(height: 16),
                               Text(
                                 'No courses assigned yet',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
                                       color: AppColors.textSecondary,
                                     ),
                               ),
@@ -383,7 +398,9 @@ class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
               children: [
                 _buildStatusChip(assignment),
                 const Spacer(),
-                if (showGradeButton && assignment.isSubmitted && !assignment.isEvaluated)
+                if (showGradeButton &&
+                    assignment.isSubmitted &&
+                    !assignment.isEvaluated)
                   ElevatedButton.icon(
                     onPressed: () => _showGradeSubmissionDialog(assignment),
                     icon: const Icon(Icons.grading, size: 16),
@@ -391,7 +408,8 @@ class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                     ),
                   ),
               ],
@@ -417,7 +435,8 @@ class _AssignmentManagementScreenState extends State<AssignmentManagementScreen>
                 ],
               ),
               const SizedBox(height: 4),
-              if (assignment.feedback != null && assignment.feedback!.isNotEmpty)
+              if (assignment.feedback != null &&
+                  assignment.feedback!.isNotEmpty)
                 Text(
                   assignment.feedback!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -549,7 +568,8 @@ class _CreateAssignmentDialogState extends State<CreateAssignmentDialog> {
       'attachment_urls': <String>[],
     };
 
-    final assignmentProvider = Provider.of<AssignmentProvider>(context, listen: false);
+    final assignmentProvider =
+        Provider.of<AssignmentProvider>(context, listen: false);
     final success = await assignmentProvider.createAssignment(assignmentData);
 
     setState(() {
@@ -569,7 +589,8 @@ class _CreateAssignmentDialogState extends State<CreateAssignmentDialog> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(assignmentProvider.error ?? 'Failed to create assignment'),
+          content:
+              Text(assignmentProvider.error ?? 'Failed to create assignment'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -632,7 +653,8 @@ class _CreateAssignmentDialogState extends State<CreateAssignmentDialog> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter total marks';
                     }
-                    if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                    if (double.tryParse(value) == null ||
+                        double.parse(value) <= 0) {
                       return 'Please enter a valid number';
                     }
                     return null;
@@ -653,7 +675,8 @@ class _CreateAssignmentDialogState extends State<CreateAssignmentDialog> {
                     InkWell(
                       onTap: _selectDueDate,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 14),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           border: Border.all(color: AppColors.textHint),
@@ -739,12 +762,13 @@ class _GradeSubmissionDialogState extends State<GradeSubmissionDialog> {
     final marks = double.parse(_marksController.text);
     final feedback = _feedbackController.text.trim();
 
-    final assignmentProvider = Provider.of<AssignmentProvider>(context, listen: false);
-    
+    final assignmentProvider =
+        Provider.of<AssignmentProvider>(context, listen: false);
+
     // This is a mock implementation since we don't have the actual studentId
     // In a real app, we would get the student ID from the submission
     final studentId = 1; // Mock student ID
-    
+
     final success = await assignmentProvider.gradeAssignment(
       widget.assignment.id,
       studentId,
@@ -769,7 +793,8 @@ class _GradeSubmissionDialogState extends State<GradeSubmissionDialog> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(assignmentProvider.error ?? 'Failed to grade assignment'),
+          content:
+              Text(assignmentProvider.error ?? 'Failed to grade assignment'),
           backgroundColor: AppColors.error,
         ),
       );

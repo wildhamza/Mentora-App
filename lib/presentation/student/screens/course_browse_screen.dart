@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants.dart';
 import '../../../core/theme.dart';
 import '../../../providers/course_provider.dart';
 import '../../common/app_button.dart';
@@ -34,7 +33,7 @@ class _CourseBrowseScreenState extends State<CourseBrowseScreen> {
   @override
   Widget build(BuildContext context) {
     final courseProvider = Provider.of<CourseProvider>(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Browse Courses'),
@@ -72,9 +71,9 @@ class _CourseBrowseScreenState extends State<CourseBrowseScreen> {
                   });
                 },
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Filter chips
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -89,17 +88,17 @@ class _CourseBrowseScreenState extends State<CourseBrowseScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Available courses
               Text(
                 'Available Courses',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Course list
               Expanded(
                 child: courseProvider.isLoading
@@ -117,9 +116,12 @@ class _CourseBrowseScreenState extends State<CourseBrowseScreen> {
                                 const SizedBox(height: 16),
                                 Text(
                                   'No courses available at the moment',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
                                 ),
                               ],
                             ),
@@ -127,10 +129,13 @@ class _CourseBrowseScreenState extends State<CourseBrowseScreen> {
                         : ListView.builder(
                             itemCount: courseProvider.availableCourses.length,
                             itemBuilder: (context, index) {
-                              final course = courseProvider.availableCourses[index];
+                              final course =
+                                  courseProvider.availableCourses[index];
                               // Filter by search query if needed
                               if (_searchQuery.isNotEmpty &&
-                                  !(course.title?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)) {
+                                  !(course.title
+                                      .toLowerCase()
+                                      .contains(_searchQuery.toLowerCase()))) {
                                 return const SizedBox.shrink();
                               }
                               return _buildCourseCard(context, course);
@@ -175,8 +180,8 @@ class _CourseBrowseScreenState extends State<CourseBrowseScreen> {
             Text(
               course.title ?? 'Course Name',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -194,19 +199,19 @@ class _CourseBrowseScreenState extends State<CourseBrowseScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildDetailRow(
-                        context, 
+                        context,
                         icon: Icons.person,
                         text: 'Instructor: ${course.instructorName ?? 'TBD'}',
                       ),
                       const SizedBox(height: 4),
                       _buildDetailRow(
-                        context, 
+                        context,
                         icon: Icons.calendar_today,
                         text: 'Duration: ${course.duration ?? '8 weeks'}',
                       ),
                       const SizedBox(height: 4),
                       _buildDetailRow(
-                        context, 
+                        context,
                         icon: Icons.attach_money,
                         text: 'Fee: Rs. ${course.fee?.toString() ?? '5000'}',
                       ),

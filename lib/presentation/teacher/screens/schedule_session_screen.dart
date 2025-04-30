@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants.dart';
 import '../../../core/theme.dart';
 import '../../../providers/course_provider.dart';
 import '../../common/loading_widget.dart';
@@ -26,14 +25,15 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   DateTime _sessionDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _startTime = TimeOfDay.now();
-  TimeOfDay _endTime = TimeOfDay.now().replacing(hour: TimeOfDay.now().hour + 1);
+  TimeOfDay _endTime =
+      TimeOfDay.now().replacing(hour: TimeOfDay.now().hour + 1);
   String _sessionType = 'live';
   bool _isRecordingEnabled = true;
   bool _isLoading = false;
-  
+
   // Mock data for sessions
   final List<Map<String, dynamic>> _scheduledSessions = [
     {
@@ -106,7 +106,7 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
     if (pickedTime != null && pickedTime != _startTime) {
       setState(() {
         _startTime = pickedTime;
-        
+
         // If end time is before start time, update it
         if (_timeToDouble(_endTime) <= _timeToDouble(_startTime)) {
           _endTime = TimeOfDay(
@@ -159,7 +159,7 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
 
     setState(() {
       _isLoading = false;
-      
+
       // Add the new session to the mock list
       _scheduledSessions.add({
         'id': _scheduledSessions.length + 1,
@@ -170,7 +170,7 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
         'type': _sessionType,
         'recording_enabled': _isRecordingEnabled,
       });
-      
+
       // Clear form
       _titleController.clear();
       _descriptionController.clear();
@@ -294,7 +294,9 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
-                              session['type'] == 'live' ? Icons.videocam : Icons.video_library,
+                              session['type'] == 'live'
+                                  ? Icons.videocam
+                                  : Icons.video_library,
                               color: AppColors.primary,
                             ),
                           ),
@@ -305,14 +307,21 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
                               children: [
                                 Text(
                                   session['title'],
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  DateFormat('EEEE, MMMM d, yyyy').format(session['date']),
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  DateFormat('EEEE, MMMM d, yyyy')
+                                      .format(session['date']),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
                                         color: AppColors.textSecondary,
                                       ),
                                 ),
@@ -336,9 +345,12 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
                                 value: 'delete',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete, size: 18, color: AppColors.error),
+                                    Icon(Icons.delete,
+                                        size: 18, color: AppColors.error),
                                     SizedBox(width: 8),
-                                    Text('Delete', style: TextStyle(color: AppColors.error)),
+                                    Text('Delete',
+                                        style:
+                                            TextStyle(color: AppColors.error)),
                                   ],
                                 ),
                               ),
@@ -370,7 +382,9 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
                             child: _buildSessionInfoItem(
                               icon: Icons.videocam,
                               title: 'Type',
-                              content: session['type'] == 'live' ? 'Live Session' : 'Recorded',
+                              content: session['type'] == 'live'
+                                  ? 'Live Session'
+                                  : 'Recorded',
                             ),
                           ),
                         ],
@@ -386,7 +400,8 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
                               icon: const Icon(Icons.info_outline),
                               label: const Text('Details'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                             ),
                           ),
@@ -406,7 +421,8 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                             ),
                           ),
@@ -514,7 +530,8 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
             InkWell(
               onTap: _selectSessionDate,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(color: AppColors.textHint),
@@ -559,7 +576,8 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
                       InkWell(
                         onTap: _selectStartTime,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 14),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             border: Border.all(color: AppColors.textHint),
@@ -605,7 +623,8 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
                       InkWell(
                         onTap: _selectEndTime,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 14),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             border: Border.all(color: AppColors.textHint),
@@ -656,7 +675,8 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
                 children: [
                   RadioListTile<String>(
                     title: const Text('Live Session'),
-                    subtitle: const Text('Real-time interactive video conference'),
+                    subtitle:
+                        const Text('Real-time interactive video conference'),
                     value: 'live',
                     groupValue: _sessionType,
                     onChanged: (value) {
@@ -685,7 +705,8 @@ class _ScheduleSessionScreenState extends State<ScheduleSessionScreen> {
             const SizedBox(height: 16),
             SwitchListTile(
               title: const Text('Enable Recording'),
-              subtitle: const Text('Record this session for students to watch later'),
+              subtitle:
+                  const Text('Record this session for students to watch later'),
               value: _isRecordingEnabled,
               onChanged: (value) {
                 setState(() {

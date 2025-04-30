@@ -6,7 +6,7 @@ import '../../common/app_button.dart';
 
 class QuizScreen extends StatefulWidget {
   final String quizId;
-  
+
   const QuizScreen({
     Key? key,
     required this.quizId,
@@ -21,26 +21,27 @@ class _QuizScreenState extends State<QuizScreen> {
   Map<int, int> _selectedAnswers = {};
   bool _isSubmitting = false;
   bool _quizSubmitted = false;
-  
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Load quiz details
-      Provider.of<QuizProvider>(context, listen: false).getQuizById(widget.quizId);
+      Provider.of<QuizProvider>(context, listen: false)
+          .getQuizById(widget.quizId);
     });
   }
-  
+
   Future<void> _submitQuiz() async {
     final quizProvider = Provider.of<QuizProvider>(context, listen: false);
     final quiz = quizProvider.currentQuiz;
-    
-    if (quiz == null || quiz.questions == null || quiz.questions!.isEmpty) {
+
+    if (quiz == null || quiz.questions.isEmpty) {
       return;
     }
-    
+
     // Check if all questions are answered
-    if (_selectedAnswers.length < quiz.questions!.length) {
+    if (_selectedAnswers.length < quiz.questions.length) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please answer all questions before submitting'),
@@ -49,29 +50,29 @@ class _QuizScreenState extends State<QuizScreen> {
       );
       return;
     }
-    
+
     setState(() {
       _isSubmitting = true;
     });
-    
+
     try {
       final answers = _selectedAnswers.map((questionIndex, answerIndex) {
-        final questionId = quiz.questions![questionIndex].id;
+        final questionId = quiz.questions[questionIndex].id;
         return MapEntry(questionId, answerIndex);
       });
-      
+
       final success = await quizProvider.submitQuizWithAnswerMap(
         widget.quizId,
         answers,
       );
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _isSubmitting = false;
         _quizSubmitted = success;
       });
-      
+
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -91,7 +92,7 @@ class _QuizScreenState extends State<QuizScreen> {
       setState(() {
         _isSubmitting = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
@@ -100,20 +101,20 @@ class _QuizScreenState extends State<QuizScreen> {
       );
     }
   }
-  
+
   void _nextQuestion() {
     final quiz = Provider.of<QuizProvider>(context, listen: false).currentQuiz;
-    if (quiz == null || quiz.questions == null || quiz.questions!.isEmpty) {
+    if (quiz == null || quiz.questions.isEmpty) {
       return;
     }
-    
-    if (_currentQuestionIndex < quiz.questions!.length - 1) {
+
+    if (_currentQuestionIndex < quiz.questions.length - 1) {
       setState(() {
         _currentQuestionIndex++;
       });
     }
   }
-  
+
   void _previousQuestion() {
     if (_currentQuestionIndex > 0) {
       setState(() {
@@ -121,18 +122,18 @@ class _QuizScreenState extends State<QuizScreen> {
       });
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final quizProvider = Provider.of<QuizProvider>(context);
     final quiz = quizProvider.currentQuiz;
     final isLoading = quizProvider.isLoading;
-    
+
     // If quiz is submitted, show results
     if (_quizSubmitted && quiz != null) {
       return _buildResultsScreen(context, quiz);
     }
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(quiz?.title ?? 'Quiz'),
@@ -156,31 +157,31 @@ class _QuizScreenState extends State<QuizScreen> {
                   children: [
                     // Quiz progress
                     LinearProgressIndicator(
-                      value: (quiz.questions != null && quiz.questions!.isNotEmpty)
-                          ? (_currentQuestionIndex + 1) / quiz.questions!.length
+                      value: (quiz.questions.isNotEmpty)
+                          ? (_currentQuestionIndex + 1) / quiz.questions.length
                           : 0,
                       backgroundColor: AppColors.primaryLight.withOpacity(0.3),
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.primary),
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     // Question count
                     Text(
-                      quiz.questions != null && quiz.questions!.isNotEmpty
-                          ? 'Question ${_currentQuestionIndex + 1} of ${quiz.questions!.length}'
+                      quiz.questions.isNotEmpty
+                          ? 'Question ${_currentQuestionIndex + 1} of ${quiz.questions.length}'
                           : 'No questions available',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                            color: AppColors.textSecondary,
+                          ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Question
-                    if (quiz.questions != null && 
-                        quiz.questions!.isNotEmpty && 
-                        _currentQuestionIndex < quiz.questions!.length)
+                    if (quiz.questions.isNotEmpty &&
+                        _currentQuestionIndex < quiz.questions.length)
                       Expanded(
                         child: SingleChildScrollView(
                           child: Column(
@@ -188,24 +189,31 @@ class _QuizScreenState extends State<QuizScreen> {
                             children: [
                               // Question text
                               Text(
-                                quiz.questions![_currentQuestionIndex].text ?? 'Question text',
-                                style: Theme.of(context).textTheme.headlineSmall,
+                                quiz.questions[_currentQuestionIndex].text,
+                                style:
+                                    Theme.of(context).textTheme.headlineSmall,
                               ),
-                              
+
                               const SizedBox(height: 24),
-                              
+
                               // Answer options
                               ...List.generate(
-                                quiz.questions![_currentQuestionIndex].options?.length ?? 0,
+                                quiz.questions[_currentQuestionIndex].options
+                                    .length,
                                 (index) {
-                                  final option = quiz.questions![_currentQuestionIndex].options![index];
+                                  final option = quiz
+                                      .questions[_currentQuestionIndex]
+                                      .options[index];
                                   return _buildAnswerOption(
                                     context,
                                     option: option,
-                                    isSelected: _selectedAnswers[_currentQuestionIndex] == index,
+                                    isSelected: _selectedAnswers[
+                                            _currentQuestionIndex] ==
+                                        index,
                                     onTap: () {
                                       setState(() {
-                                        _selectedAnswers[_currentQuestionIndex] = index;
+                                        _selectedAnswers[
+                                            _currentQuestionIndex] = index;
                                       });
                                     },
                                   );
@@ -221,9 +229,9 @@ class _QuizScreenState extends State<QuizScreen> {
                           child: Text('No questions available for this quiz'),
                         ),
                       ),
-                    
+
                     // Navigation buttons
-                    if (quiz.questions != null && quiz.questions!.isNotEmpty)
+                    if (quiz.questions.isNotEmpty)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -236,8 +244,7 @@ class _QuizScreenState extends State<QuizScreen> {
                             )
                           else
                             const SizedBox.shrink(),
-                          
-                          if (_currentQuestionIndex < quiz.questions!.length - 1)
+                          if (_currentQuestionIndex < quiz.questions.length - 1)
                             AppButton(
                               text: 'Next',
                               type: ButtonType.primary,
@@ -260,7 +267,7 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
     );
   }
-  
+
   Widget _buildAnswerOption(
     BuildContext context, {
     required dynamic option,
@@ -280,7 +287,8 @@ class _QuizScreenState extends State<QuizScreen> {
               color: isSelected ? AppColors.primary : AppColors.textHint,
               width: isSelected ? 2 : 1,
             ),
-            color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+            color:
+                isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
           ),
           child: Row(
             children: [
@@ -315,10 +323,10 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
     );
   }
-  
+
   Widget _buildResultsScreen(BuildContext context, dynamic quiz) {
     final quizResult = Provider.of<QuizProvider>(context).quizResult;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quiz Results'),
@@ -335,27 +343,27 @@ class _QuizScreenState extends State<QuizScreen> {
                 size: 100,
                 color: AppColors.success,
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               Text(
                 'Quiz Completed!',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               Text(
                 'You have completed the ${quiz.title} quiz.',
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Score
               Container(
                 padding: const EdgeInsets.all(24),
@@ -374,10 +382,11 @@ class _QuizScreenState extends State<QuizScreen> {
                       quizResult != null
                           ? '${quizResult['score']}/${quizResult['total']}'
                           : 'Pending',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -389,9 +398,9 @@ class _QuizScreenState extends State<QuizScreen> {
                   ],
                 ),
               ),
-              
+
               const Spacer(),
-              
+
               // Back to dashboard button
               AppButton(
                 text: 'Back to Dashboard',

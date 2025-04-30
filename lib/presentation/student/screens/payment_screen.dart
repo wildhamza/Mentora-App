@@ -7,7 +7,7 @@ import '../../common/app_text_field.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String courseId;
-  
+
   const PaymentScreen({
     Key? key,
     required this.courseId,
@@ -26,16 +26,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _saveCard = false;
   bool _isProcessing = false;
   bool _joinWaitlist = false;
-  
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Load course details
-      Provider.of<CourseProvider>(context, listen: false).getCourseById(widget.courseId);
+      Provider.of<CourseProvider>(context, listen: false)
+          .getCourseById(widget.courseId);
     });
   }
-  
+
   @override
   void dispose() {
     _cardNumberController.dispose();
@@ -44,29 +45,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _nameOnCardController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _processPayment() async {
     if (_formKey.currentState?.validate() != true) {
       return;
     }
-    
+
     setState(() {
       _isProcessing = true;
     });
-    
+
     try {
-      final courseProvider = Provider.of<CourseProvider>(context, listen: false);
-      
+      final courseProvider =
+          Provider.of<CourseProvider>(context, listen: false);
+
       // Check if joining waitlist instead of paying
       if (_joinWaitlist) {
-        final success = await courseProvider.joinCourseWaitlist(widget.courseId);
-        
+        final success =
+            await courseProvider.joinCourseWaitlist(widget.courseId);
+
         if (!mounted) return;
-        
+
         setState(() {
           _isProcessing = false;
         });
-        
+
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -74,7 +77,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               backgroundColor: AppColors.success,
             ),
           );
-          
+
           Navigator.of(context).pop();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -84,10 +87,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           );
         }
-        
+
         return;
       }
-      
+
       // Process payment and enroll in course
       final paymentData = {
         'card_number': _cardNumberController.text.replaceAll(' ', ''),
@@ -96,15 +99,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
         'name': _nameOnCardController.text,
         'save_card': _saveCard,
       };
-      
-      final success = await courseProvider.enrollCourseWithPayment(widget.courseId, paymentData);
-      
+
+      final success = await courseProvider.enrollCourseWithPayment(
+          widget.courseId, paymentData);
+
       if (!mounted) return;
-      
+
       setState(() {
         _isProcessing = false;
       });
-      
+
       if (success) {
         // Show success dialog
         showDialog(
@@ -115,7 +119,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(courseProvider.error ?? 'Payment failed. Please try again.'),
+            content: Text(
+                courseProvider.error ?? 'Payment failed. Please try again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -124,7 +129,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       setState(() {
         _isProcessing = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
@@ -133,18 +138,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
       );
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final courseProvider = Provider.of<CourseProvider>(context);
     final course = courseProvider.currentCourse;
     final isLoading = courseProvider.isLoading;
-    
+
     // Check if course is full
-    final bool isFull = course?.currentEnrollment != null && 
-                      course?.maxCapacity != null && 
-                      course!.currentEnrollment! >= course.maxCapacity!;
-    
+    final bool isFull = course?.currentEnrollment != null &&
+        course?.maxCapacity != null &&
+        course!.currentEnrollment! >= course.maxCapacity!;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Payment'),
@@ -175,7 +180,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             _buildSummaryRow(
                               context,
                               label: 'Course',
-                              value: course.title ?? 'Unknown',
+                              value: course.title,
                             ),
                             const Divider(),
                             _buildSummaryRow(
@@ -193,21 +198,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             _buildSummaryRow(
                               context,
                               label: 'Starts On',
-                              value: course.startDate != null 
-                                ? '${course.startDate!.day}/${course.startDate!.month}/${course.startDate!.year}' 
-                                : 'TBD',
+                              value: course.startDate != null
+                                  ? '${course.startDate!.day}/${course.startDate!.month}/${course.startDate!.year}'
+                                  : 'TBD',
                             ),
                             const Divider(),
                             _buildSummaryRow(
                               context,
                               label: 'Fee',
                               value: 'Rs. ${course.fee?.toString() ?? '0'}',
-                              valueStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
+                              valueStyle: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
                             ),
-                            
                             if (isFull) ...[
                               const SizedBox(height: 16),
                               Container(
@@ -227,17 +234,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                     Expanded(
                                       child: Text(
                                         'This course is full. You can join the waitlist and we\'ll notify you when a spot becomes available.',
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: AppColors.textPrimary,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: AppColors.textPrimary,
+                                            ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              
                               const SizedBox(height: 16),
-                              
                               SwitchListTile(
                                 title: const Text('Join Waitlist Instead'),
                                 value: _joinWaitlist,
@@ -253,18 +261,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Payment form
                     if (!_joinWaitlist) ...[
                       Text(
                         'Payment Details',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      
                       const SizedBox(height: 16),
-                      
                       Form(
                         key: _formKey,
                         child: Column(
@@ -282,9 +288,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 return null;
                               },
                             ),
-                            
                             const SizedBox(height: 16),
-                            
                             Row(
                               children: [
                                 Expanded(
@@ -319,9 +323,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 ),
                               ],
                             ),
-                            
                             const SizedBox(height: 16),
-                            
                             AppTextField(
                               label: 'Name on Card',
                               hint: 'John Doe',
@@ -334,11 +336,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 return null;
                               },
                             ),
-                            
                             const SizedBox(height: 8),
-                            
                             CheckboxListTile(
-                              title: const Text('Save card for future payments'),
+                              title:
+                                  const Text('Save card for future payments'),
                               value: _saveCard,
                               onChanged: (value) {
                                 setState(() {
@@ -352,20 +353,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                       ),
                     ],
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Payment button
                     AppButton(
-                      text: _joinWaitlist ? 'Join Waitlist' : 'Pay Rs. ${course.fee?.toString() ?? '0'}',
+                      text: _joinWaitlist
+                          ? 'Join Waitlist'
+                          : 'Pay Rs. ${course.fee?.toString() ?? '0'}',
                       type: ButtonType.primary,
                       isLoading: _isProcessing,
                       isFullWidth: true,
                       onPressed: _processPayment,
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     if (!_joinWaitlist) ...[
                       Center(
                         child: Column(
@@ -391,9 +394,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             const SizedBox(height: 8),
                             Text(
                               'Your payment information is secure. We use industry-standard encryption to protect your data.',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -406,7 +412,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
     );
   }
-  
+
   Widget _buildSummaryRow(
     BuildContext context, {
     required String label,
@@ -421,20 +427,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
           Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+                  color: AppColors.textSecondary,
+                ),
           ),
           Text(
             value,
-            style: valueStyle ?? Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+            style: valueStyle ??
+                Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildSuccessDialog(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -454,8 +461,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Text(
               'Payment Successful!',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),

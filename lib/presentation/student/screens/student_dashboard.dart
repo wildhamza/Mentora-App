@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants.dart';
 import '../../../core/routes.dart';
 import '../../../core/theme.dart';
 import '../../../providers/auth_provider.dart';
@@ -28,7 +27,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final courseProvider = Provider.of<CourseProvider>(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Student Dashboard'),
@@ -55,18 +54,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 'Welcome, ${authProvider.user?.name ?? 'Student'}!',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               Text(
                 'Here\'s your learning dashboard',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                      color: AppColors.textSecondary,
+                    ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Quick access buttons
               Row(
                 children: [
@@ -93,17 +92,17 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Enrolled courses
               Text(
                 'My Courses',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Course list
               Expanded(
                 child: courseProvider.isLoading
@@ -121,16 +120,20 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 const SizedBox(height: 16),
                                 Text(
                                   'No courses enrolled yet',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
                                 ),
                                 const SizedBox(height: 16),
                                 AppButton(
                                   text: 'Explore Courses',
                                   type: ButtonType.primary,
                                   onPressed: () {
-                                    Navigator.of(context).pushNamed(Routes.courseBrowse);
+                                    Navigator.of(context)
+                                        .pushNamed(Routes.courseBrowse);
                                   },
                                 ),
                               ],
@@ -139,7 +142,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         : ListView.builder(
                             itemCount: courseProvider.enrolledCourses.length,
                             itemBuilder: (context, index) {
-                              final course = courseProvider.enrolledCourses[index];
+                              final course =
+                                  courseProvider.enrolledCourses[index];
                               return _buildCourseCard(context, course);
                             },
                           ),
@@ -201,8 +205,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
             Text(
               course.title ?? 'Course Name',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -229,17 +233,20 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           const SizedBox(width: 8),
                           Text(
                             '40%',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       LinearProgressIndicator(
                         value: 0.4,
-                        backgroundColor: AppColors.primaryLight.withOpacity(0.3),
-                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        backgroundColor:
+                            AppColors.primaryLight.withOpacity(0.3),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.primary),
                       ),
                     ],
                   ),

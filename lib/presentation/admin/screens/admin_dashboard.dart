@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants.dart';
 import '../../../core/routes.dart';
 import '../../../core/theme.dart';
 import '../../../providers/auth_provider.dart';
@@ -17,27 +16,27 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   late final CourseProvider _courseProvider;
-  
+
   @override
   void initState() {
     super.initState();
     _courseProvider = Provider.of<CourseProvider>(context, listen: false);
     _loadData();
   }
-  
+
   Future<void> _loadData() async {
     await _courseProvider.fetchAllCourses();
   }
-  
+
   Future<void> _refreshData() async {
     await _loadData();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final courseProvider = Provider.of<CourseProvider>(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
@@ -70,19 +69,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       children: [
                         // Welcome section
                         _buildWelcomeSection(authProvider),
-                        
+
                         const SizedBox(height: 24),
-                        
+
                         // Stats cards
                         _buildStatsSection(courseProvider),
-                        
+
                         const SizedBox(height: 24),
-                        
+
                         // Actions section
                         _buildActionsSection(),
-                        
+
                         const SizedBox(height: 24),
-                        
+
                         // Recent courses section
                         _buildRecentCoursesSection(courseProvider),
                       ],
@@ -99,7 +98,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-  
+
   Widget _buildWelcomeSection(AuthProvider authProvider) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -126,9 +125,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Text(
               authProvider.user?.name.substring(0, 1).toUpperCase() ?? 'A',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ),
           const SizedBox(width: 16),
@@ -139,16 +138,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Text(
                   'Welcome back,',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withOpacity(0.8),
-                  ),
+                        color: Colors.white.withOpacity(0.8),
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   authProvider.user?.name ?? 'Admin',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -159,24 +158,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-  
+
   Widget _buildStatsSection(CourseProvider courseProvider) {
     final totalCourses = courseProvider.courses.length;
-    final activeCourses = courseProvider.courses.where((course) => course.isEnrollmentOpen).length;
+    final activeCourses = courseProvider.courses
+        .where((course) => course.isEnrollmentOpen)
+        .length;
     final totalInstructors = courseProvider.courses
         .map((course) => course.instructorId)
         .where((id) => id != null)
         .toSet()
         .length;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Overview',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -216,8 +217,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               child: _buildStatCard(
                 title: 'Enrollment Rate',
                 value: totalCourses > 0
-                    ? '${((courseProvider.courses.fold<int>(0, (sum, course) => sum + course.enrolledCount) / 
-                        courseProvider.courses.fold<int>(0, (sum, course) => sum + course.capacity)) * 100).toStringAsFixed(1)}%'
+                    ? '${((courseProvider.courses.fold<int>(0, (sum, course) => sum + course.enrolledCount) / courseProvider.courses.fold<int>(0, (sum, course) => sum + course.capacity)) * 100).toStringAsFixed(1)}%'
                     : '0%',
                 icon: Icons.trending_up,
                 iconColor: AppColors.info,
@@ -228,7 +228,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ],
     );
   }
-  
+
   Widget _buildStatCard({
     required String title,
     required String value,
@@ -257,8 +257,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Text(
                 title,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                      color: AppColors.textSecondary,
+                    ),
               ),
               Icon(
                 icon,
@@ -271,14 +271,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Text(
             value,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildActionsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,8 +286,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         Text(
           'Quick Actions',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -351,7 +351,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ],
     );
   }
-  
+
   Widget _buildActionCard({
     required String title,
     required IconData icon,
@@ -393,8 +393,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Text(
               title,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+                    fontWeight: FontWeight.w500,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -402,10 +402,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-  
+
   Widget _buildRecentCoursesSection(CourseProvider courseProvider) {
     final recentCourses = courseProvider.courses.take(3).toList();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -415,8 +415,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Text(
               'Recent Courses',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             TextButton(
               onPressed: () {
@@ -448,8 +448,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Text(
                     'No courses created yet',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                          color: AppColors.textSecondary,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
@@ -477,7 +477,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ],
     );
   }
-  
+
   Widget _buildCourseListItem(course) {
     return Container(
       decoration: BoxDecoration(
@@ -510,16 +510,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
         title: Text(
           course.title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+                fontWeight: FontWeight.w600,
+              ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           '${course.enrolledCount}/${course.capacity} students enrolled',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-          ),
+                color: AppColors.textSecondary,
+              ),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -539,7 +539,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-  
+
   void _showCourseSelectionDialog() {
     showDialog(
       context: context,
@@ -555,7 +555,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   child: Text('No courses available'),
                 );
               }
-              
+
               return ListView.separated(
                 shrinkWrap: true,
                 itemCount: courseProvider.courses.length,
@@ -564,9 +564,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   final course = courseProvider.courses[index];
                   return ListTile(
                     title: Text(course.title),
-                    subtitle: Text(course.hasInstructor 
-                      ? 'Instructor: ${course.instructorName}' 
-                      : 'No instructor assigned'),
+                    subtitle: Text(course.hasInstructor
+                        ? 'Instructor: ${course.instructorName}'
+                        : 'No instructor assigned'),
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).pushNamed(
